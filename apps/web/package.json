@@ -1,0 +1,15 @@
+{
+  "name": "@flowment/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "api:generate": "openapi-ts"
+  },
+  "dependencies": {
+    "@flowment/domain": "workspace:*",
+    "@tanstack/react-query": "^5.104.1"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0"
+  }
+}
