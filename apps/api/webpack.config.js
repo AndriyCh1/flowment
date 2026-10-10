@@ -1,6 +1,10 @@
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
-const { join } = require('path');
+const { dirname, join } = require('path');
 const { IgnorePlugin } = require('webpack');
+
+// SwaggerModule serves the UI's static files from swagger-ui-dist's __dirname.
+// Bundled, that __dirname is dist/, so the files are copied there.
+const swaggerUiDist = dirname(require.resolve('swagger-ui-dist/package.json'));
 
 module.exports = {
   output: {
@@ -25,7 +29,14 @@ module.exports = {
       compiler: 'tsc',
       main: './src/main.ts',
       tsConfig: './tsconfig.app.json',
-      assets: ['./src/assets'],
+      assets: [
+        './src/assets',
+        {
+          input: swaggerUiDist,
+          glob: '{swagger-ui.css,swagger-ui-bundle.js,swagger-ui-standalone-preset.js,favicon-*.png}',
+          output: '.',
+        },
+      ],
       optimization: false,
       outputHashing: 'none',
       generatePackageJson: false,

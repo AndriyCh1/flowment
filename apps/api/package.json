@@ -96,6 +96,7 @@
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
+    "swagger-ui-dist": "5.33.0",
     "tslib": "^2.3.0",
     "zod": "^4.6.5"
   },
