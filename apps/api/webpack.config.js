@@ -10,6 +10,8 @@ module.exports = {
       devtoolModuleFilenameTemplate: '[absolute-resource-path]',
     }),
   },
+  // Some deps (e.g. @nestjs/throttler) ship .js.map files referencing .ts sources they don't publish.
+  ignoreWarnings: [/Failed to parse source map/],
   plugins: [
     // pg loads the optional pg-native only when `pg.native` is used; it isn't installed.
     new IgnorePlugin({ resourceRegExp: /^pg-native$/ }),

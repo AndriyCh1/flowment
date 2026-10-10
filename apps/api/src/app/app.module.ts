@@ -1,20 +1,26 @@
-import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
-import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
-import { DatabaseModule } from './database/database.module';
-import { HealthModule } from './modules/health/health.module';
+import { DatabaseModule } from '../infrastructure/database';
+import { RedisModule } from '../infrastructure/redis';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
+import { HealthModule } from './health/health.module';
+import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { AppThrottlerModule } from './throttler';
 
 @Module({
-  imports: [DatabaseModule, HealthModule],
-  controllers: [],
+  imports: [DatabaseModule, RedisModule, AppThrottlerModule, HealthModule],
   providers: [
-    // Validates request DTOs made with createZodDto.
     { provide: APP_PIPE, useClass: ZodValidationPipe },
-    // Parses responses against the DTO given to @ZodSerializerDto.
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
-    // Every error response has the same body: { statusCode, message, error, path, timestamp }.
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // '{*splat}' (path-to-regexp v8) matches every path, including the root.
+    consumer.apply(RequestIdMiddleware).forRoutes('{*splat}');
+  }
+}

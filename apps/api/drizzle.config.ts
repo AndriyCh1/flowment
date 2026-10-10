@@ -1,17 +1,17 @@
 import { defineConfig } from 'drizzle-kit';
-import { Env } from './src/app/config/env';
+import { databaseConfig } from './src/config/database.config';
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: './src/app/database/schema.ts',
-  out: './src/app/database/migrations',
+  schema: './src/infrastructure/database/schema/index.ts',
+  out: './src/infrastructure/database/migrations',
   casing: 'snake_case',
   dbCredentials: {
-    host: Env.DB_HOST,
-    port: Env.DB_PORT,
-    user: Env.DB_USER,
-    password: Env.DB_PASSWORD,
-    database: Env.DB_NAME,
-    ssl: Env.DB_SSL ? { rejectUnauthorized: true } : false,
+    host: databaseConfig.host,
+    port: databaseConfig.port,
+    user: databaseConfig.user,
+    password: databaseConfig.password,
+    database: databaseConfig.database,
+    ssl: databaseConfig.ssl ? { rejectUnauthorized: true } : false,
   },
 });

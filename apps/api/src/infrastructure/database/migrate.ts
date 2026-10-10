@@ -1,4 +1,3 @@
-// Standalone script, not part of the Nest app: applies pending migrations.
 import { join } from 'node:path';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { db, pool } from './client';

@@ -1,4 +1,97 @@
 {
   "extends": ["../../.oxlintrc.json"],
-  "plugins": ["vitest"]
+  "plugins": ["vitest"],
+  "overrides": [
+    {
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/app",
+                  "**/app/**",
+                  "**/config/**",
+                  "**/modules/**",
+                  "**/infrastructure/**"
+                ],
+                "message": "shared/ holds business-agnostic primitives and imports nothing else from src/. See apps/api/ARCHITECTURE.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/config/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/app",
+                  "**/app/**",
+                  "**/modules/**",
+                  "**/infrastructure/**"
+                ],
+                "message": "config/ only defines typed configuration; it must not depend on app/, modules/ or infrastructure/. See apps/api/ARCHITECTURE.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/infrastructure/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/app", "**/app/**", "**/modules/**"],
+                "message": "infrastructure/ provides technical adapters and must not import app/ or modules/. See apps/api/ARCHITECTURE.md."
+              },
+              {
+                "group": ["**/config/env"],
+                "message": "Read typed values from config/*.config.ts; only config/ reads the raw Env. See apps/api/ARCHITECTURE.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/modules/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/app", "**/app/**"],
+                "message": "modules/ must not import the composition root (app/). See apps/api/ARCHITECTURE.md."
+              },
+              {
+                "group": ["../*/*", "**/modules/*/*"],
+                "message": "Import another module through its public index.ts (e.g. '../users'), never its internal files. See apps/api/ARCHITECTURE.md."
+              },
+              {
+                "group": ["**/infrastructure/*/*"],
+                "message": "Import infrastructure through its folder index (e.g. '../../infrastructure/database'). See apps/api/ARCHITECTURE.md."
+              },
+              {
+                "group": ["**/config/env"],
+                "message": "Read typed values from config/*.config.ts; only config/ reads the raw Env. See apps/api/ARCHITECTURE.md."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

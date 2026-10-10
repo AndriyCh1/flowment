@@ -2,7 +2,8 @@
 // apps/web generates its API client from.
 //
 // The app is created but never listens, and the pool connects lazily, so no
-// database is needed. src/app/config/env.ts still requires the DB_* variables.
+// database is needed; Redis connects lazily too. src/config/env.ts still
+// requires the DB_* variables.
 import 'reflect-metadata';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -21,7 +22,7 @@ async function main(): Promise<void> {
     writeFileSync(OUTPUT_PATH, `${JSON.stringify(document, null, 2)}\n`);
     console.log(`OpenAPI spec written to ${OUTPUT_PATH}`);
   } finally {
-    // Also ends the pg pool (DatabaseModule's shutdown hook).
+    // Also ends the pg pool and Redis client (their modules' shutdown hooks).
     await app.close();
   }
 }

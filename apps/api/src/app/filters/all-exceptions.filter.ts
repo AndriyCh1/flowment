@@ -9,13 +9,26 @@ import {
 import { HttpAdapterHost } from '@nestjs/core';
 import { ZodSerializationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
+import { ApplicationError, ErrorCode } from '../../shared/errors';
+import { ErrorResponseBody, getRequestId } from '../../shared/http';
 
-type ErrorResponseBody = {
-  statusCode: number;
-  message: string | string[];
-  error: string;
-  path: string;
-  timestamp: string;
+const ERROR_CODE_STATUS: Record<ErrorCode, HttpStatus> = {
+  [ErrorCode.NOT_FOUND]: HttpStatus.NOT_FOUND,
+  [ErrorCode.CONFLICT]: HttpStatus.CONFLICT,
+  [ErrorCode.VALIDATION]: HttpStatus.BAD_REQUEST,
+  [ErrorCode.UNAUTHORIZED]: HttpStatus.UNAUTHORIZED,
+  [ErrorCode.FORBIDDEN]: HttpStatus.FORBIDDEN,
+};
+
+type NormalizedError = Pick<
+  ErrorResponseBody,
+  'statusCode' | 'message' | 'error'
+>;
+
+const INTERNAL_ERROR: NormalizedError = {
+  statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  message: 'Internal server error',
+  error: 'Internal Server Error',
 };
 
 @Catch()
@@ -29,8 +42,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest();
     const path: string = httpAdapter.getRequestUrl(request) ?? '';
+    const requestId = getRequestId(request);
 
-    const { statusCode, message, error } = this.normalize(exception, path);
+    const { statusCode, message, error } = this.normalize(
+      exception,
+      requestId ? `${path} [${requestId}]` : path,
+    );
 
     const body: ErrorResponseBody = {
       statusCode,
@@ -38,30 +55,33 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error,
       path,
       timestamp: new Date().toISOString(),
+      requestId,
     };
 
     httpAdapter.reply(ctx.getResponse(), body, statusCode);
   }
 
-  private normalize(
-    exception: unknown,
-    path: string,
-  ): { statusCode: number; message: string | string[]; error: string } {
+  private normalize(exception: unknown, where: string): NormalizedError {
+    // Expected business errors from modules: map the code, don't log as failures.
+    if (exception instanceof ApplicationError) {
+      return {
+        statusCode: ERROR_CODE_STATUS[exception.code],
+        message: exception.message,
+        error: exception.code,
+      };
+    }
+
     if (exception instanceof ZodSerializationException) {
       const zodError = exception.getZodError();
 
       this.logger.error(
-        `Response serialization failed for ${path}`,
+        `Response serialization failed for ${where}`,
         zodError instanceof ZodError
           ? JSON.stringify(zodError.issues, null, 2)
           : zodError,
       );
 
-      return {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-        error: 'Internal Server Error',
-      };
+      return INTERNAL_ERROR;
     }
 
     if (exception instanceof HttpException) {
@@ -70,7 +90,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
         this.logger.error(
-          `${status} on ${path}`,
+          `${status} on ${where}`,
           exception.stack ?? exception.message,
         );
       }
@@ -89,16 +109,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     this.logger.error(
-      `Unhandled exception on ${path}`,
+      `Unhandled exception on ${where}`,
       exception instanceof Error
         ? (exception.stack ?? exception.message)
         : String(exception),
     );
 
-    return {
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
-      error: 'Internal Server Error',
-    };
+    return INTERNAL_ERROR;
   }
 }
