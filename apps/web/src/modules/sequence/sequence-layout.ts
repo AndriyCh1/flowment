@@ -58,7 +58,3 @@ export function layoutSequence(
       : { type: 'interaction', number, step, from, to };
   });
 }
-
-export function participantName(component: Component): string {
-  return component.name.trim() || 'Unnamed component';
-}

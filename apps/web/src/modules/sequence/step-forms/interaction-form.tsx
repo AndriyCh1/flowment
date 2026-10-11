@@ -2,17 +2,17 @@ import type { Component } from '@flowment/domain';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { FormActions, type FormMode } from '../../../components/form-actions';
 import { Field } from '../../../components/ui/field';
 import { Input } from '../../../components/ui/input';
-import { ComponentSelect } from './component-select';
-import { StepFormActions, type StepFormMode } from './step-form-actions';
+import { ComponentSelect } from '../../design-components';
 import {
   InteractionFormSchema,
   type InteractionFormValues,
 } from './step-form-schemas';
 
 type InteractionFormProps = {
-  mode: StepFormMode;
+  mode: FormMode;
   components: Component[];
   defaultValues: InteractionFormValues;
   onSubmit: (values: InteractionFormValues) => void;
@@ -66,8 +66,9 @@ export function InteractionForm({
       <Field label="Text">
         <Input label="Text" className="w-full" {...register('text')} />
       </Field>
-      <StepFormActions
+      <FormActions
         mode={mode}
+        noun="step"
         isDirty={isDirty}
         onRevert={() => reset()}
         onCancel={onCancel}

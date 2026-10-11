@@ -4,10 +4,8 @@ import {
   duplicateStep,
   insertStep,
   moveStep,
-  replaceScenario,
   replaceStep,
 } from './sequence-editing.js';
-import { SystemDesignSchema, type SystemDesign } from './system-design.js';
 
 const request: InteractionStep = {
   id: 'request',
@@ -132,29 +130,5 @@ describe('deleteStep', () => {
 
   it('rejects an unknown step', () => {
     expect(() => deleteStep(scenario, 'missing')).toThrow('Unknown step "missing"');
-  });
-});
-
-describe('replaceScenario', () => {
-  const design: SystemDesign = {
-    components: [
-      { id: 'client', name: 'Client' },
-      { id: 'api', name: 'API' },
-    ],
-    scenarios: [scenario, { id: 'other', title: 'Other', initialFacts: [], steps: [] }],
-    assumptions: [],
-  };
-
-  it('replaces the scenario with the same id and keeps the design valid', () => {
-    const edited = duplicateStep(moveStep(scenario, 'response', 0), 'note', 'copy');
-    const result = replaceScenario(design, edited);
-    expect(result.scenarios).toEqual([edited, design.scenarios[1]]);
-    expect(SystemDesignSchema.safeParse(result).success).toBe(true);
-  });
-
-  it('rejects an unknown scenario', () => {
-    expect(() => replaceScenario(design, { ...scenario, id: 'missing' })).toThrow(
-      'Unknown scenario "missing"',
-    );
   });
 });

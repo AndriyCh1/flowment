@@ -1,9 +1,9 @@
 import type { Component, SequenceScenario } from '@flowment/domain';
 import {
-  layoutSequence,
+  componentKindLabel,
   participantName,
-  type SequenceRow,
-} from './sequence-layout';
+} from '../../shared/design-labels';
+import { layoutSequence, type SequenceRow } from './sequence-layout';
 
 const GUTTER_WIDTH = '2.5rem';
 const MIN_COLUMN_WIDTH = '10rem';
@@ -46,7 +46,9 @@ export function SequenceDiagram({
                   {participantName(component)}
                 </div>
                 {component.kind && (
-                  <div className="text-xs text-zinc-500">{component.kind}</div>
+                  <div className="text-xs text-zinc-500">
+                    {componentKindLabel(component.kind)}
+                  </div>
                 )}
               </div>
               <span className="min-h-3 w-px flex-1 bg-zinc-300" />

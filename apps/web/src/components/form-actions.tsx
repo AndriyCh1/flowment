@@ -1,24 +1,26 @@
-import { Button } from '../../../components/ui/button';
+import { Button } from './ui/button';
 
-export type StepFormMode = 'create' | 'edit';
+export type FormMode = 'create' | 'edit';
 
-type StepFormActionsProps = {
-  mode: StepFormMode;
+type FormActionsProps = {
+  mode: FormMode;
+  noun: string;
   isDirty: boolean;
   onRevert: () => void;
   onCancel?: () => void;
 };
 
-export function StepFormActions({
+export function FormActions({
   mode,
+  noun,
   isDirty,
   onRevert,
   onCancel,
-}: StepFormActionsProps) {
+}: FormActionsProps) {
   if (mode === 'create') {
     return (
-      <div className="flex gap-2">
-        <Button type="submit">Add step</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit">Add {noun}</Button>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -27,9 +29,9 @@ export function StepFormActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <Button type="submit" disabled={!isDirty}>
-        Save step
+        Save {noun}
       </Button>
       <Button variant="secondary" disabled={!isDirty} onClick={onRevert}>
         Revert

@@ -1,5 +1,4 @@
 import type { SequenceScenario, SequenceStep } from './scenario.js';
-import type { SystemDesign } from './system-design.js';
 
 function stepIndex(scenario: SequenceScenario, stepId: string): number {
   const index = scenario.steps.findIndex((step) => step.id === stepId);
@@ -66,17 +65,4 @@ export function deleteStep(scenario: SequenceScenario, stepId: string): Sequence
     scenario,
     scenario.steps.filter((_step, currentIndex) => currentIndex !== index),
   );
-}
-
-export function replaceScenario(design: SystemDesign, scenario: SequenceScenario): SystemDesign {
-  const index = design.scenarios.findIndex(({ id }) => id === scenario.id);
-  if (index === -1) {
-    throw new Error(`Unknown scenario "${scenario.id}"`);
-  }
-  return {
-    ...design,
-    scenarios: design.scenarios.map((current, currentIndex) =>
-      currentIndex === index ? scenario : current,
-    ),
-  };
 }
