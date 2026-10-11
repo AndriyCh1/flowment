@@ -1,10 +1,8 @@
-import { SystemDesignSchema } from '@flowment/domain';
+import { ProjectNameSchema, SystemDesignSchema } from '@flowment/domain';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { PaginationQuerySchema, paginatedSchema } from '../../shared/http';
 import { isoDate } from '../../shared/zod/openapi-helpers';
-
-const ProjectNameSchema = z.string().trim().min(1);
 
 export const CreateProjectSchema = z.object({
   name: ProjectNameSchema,
