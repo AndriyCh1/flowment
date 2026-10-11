@@ -431,30 +431,6 @@
                               },
                               "text": {
                                 "type": "string"
-                              },
-                              "semantics": {
-                                "type": "object",
-                                "properties": {
-                                  "stateEffects": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "operationKind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "read",
-                                      "write",
-                                      "request",
-                                      "response",
-                                      "message",
-                                      "internal",
-                                      "other"
-                                    ]
-                                  }
-                                },
-                                "additionalProperties": false
                               }
                             },
                             "required": [
@@ -647,30 +623,6 @@
                               },
                               "text": {
                                 "type": "string"
-                              },
-                              "semantics": {
-                                "type": "object",
-                                "properties": {
-                                  "stateEffects": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "operationKind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "read",
-                                      "write",
-                                      "request",
-                                      "response",
-                                      "message",
-                                      "internal",
-                                      "other"
-                                    ]
-                                  }
-                                },
-                                "additionalProperties": false
                               }
                             },
                             "required": [
@@ -953,30 +905,6 @@
                               },
                               "text": {
                                 "type": "string"
-                              },
-                              "semantics": {
-                                "type": "object",
-                                "properties": {
-                                  "stateEffects": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "operationKind": {
-                                    "type": "string",
-                                    "enum": [
-                                      "read",
-                                      "write",
-                                      "request",
-                                      "response",
-                                      "message",
-                                      "internal",
-                                      "other"
-                                    ]
-                                  }
-                                },
-                                "additionalProperties": false
                               }
                             },
                             "required": [

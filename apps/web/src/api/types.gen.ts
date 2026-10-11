@@ -50,17 +50,6 @@ export type CreateProjectDto = {
             from: string;
             to: string;
             text: string;
-            semantics?: {
-              stateEffects?: Array<string>;
-              operationKind?:
-                | 'read'
-                | 'write'
-                | 'request'
-                | 'response'
-                | 'message'
-                | 'internal'
-                | 'other';
-            };
           }
         | {
             id: string;
@@ -110,17 +99,6 @@ export type ProjectDto = {
             from: string;
             to: string;
             text: string;
-            semantics?: {
-              stateEffects?: Array<string>;
-              operationKind?:
-                | 'read'
-                | 'write'
-                | 'request'
-                | 'response'
-                | 'message'
-                | 'internal'
-                | 'other';
-            };
           }
         | {
             id: string;
@@ -188,17 +166,6 @@ export type UpdateProjectDto = {
             from: string;
             to: string;
             text: string;
-            semantics?: {
-              stateEffects?: Array<string>;
-              operationKind?:
-                | 'read'
-                | 'write'
-                | 'request'
-                | 'response'
-                | 'message'
-                | 'internal'
-                | 'other';
-            };
           }
         | {
             id: string;

@@ -36,10 +36,6 @@ const uploadDesign: SystemDesign = {
           from: 'client',
           to: 'api',
           text: 'Upload CSV',
-          semantics: {
-            stateEffects: ['upload stored'],
-            operationKind: 'request',
-          },
         },
         { id: 's2', type: 'note', text: 'Some time passes' },
         {
@@ -135,30 +131,6 @@ describe('Projects API', () => {
       [
         'a design with an unknown component',
         { name: 'x', systemDesign: brokenDesign },
-      ],
-      [
-        'unconfirmed semantics',
-        {
-          name: 'x',
-          systemDesign: {
-            ...uploadDesign,
-            scenarios: [
-              {
-                ...uploadDesign.scenarios[0],
-                steps: [
-                  {
-                    id: 's1',
-                    type: 'interaction',
-                    from: 'client',
-                    to: 'api',
-                    text: 'Upload',
-                    semantics: { operationKind: 'request', confidence: 0.4 },
-                  },
-                ],
-              },
-            ],
-          },
-        },
       ],
       [
         'a design missing a collection',
