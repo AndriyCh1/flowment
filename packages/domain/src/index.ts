@@ -4,4 +4,5 @@ export * from './lib/fact.js';
 export * from './lib/id.js';
 export * from './lib/project.js';
 export * from './lib/scenario.js';
+export * from './lib/sequence-editing.js';
 export * from './lib/system-design.js';

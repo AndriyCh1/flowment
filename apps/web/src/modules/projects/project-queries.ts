@@ -1,3 +1,4 @@
+import type { SystemDesign } from '@flowment/domain';
 import {
   keepPreviousData,
   useMutation,
@@ -67,6 +68,36 @@ export function useCreateProject() {
       return data;
     },
     onSuccess: storeSavedProject,
+  });
+}
+
+export function useSaveSystemDesign(id: string) {
+  const queryClient = useQueryClient();
+  const mutationKey = ['projects', 'save-design', id];
+  return useMutation({
+    mutationKey,
+    scope: { id: `projects/${id}/system-design` },
+    mutationFn: async (systemDesign: SystemDesign) => {
+      const { data } = await updateProject({
+        path: { id },
+        body: { systemDesign },
+        throwOnError: true,
+      });
+      return data;
+    },
+    onMutate: async (systemDesign) => {
+      await queryClient.cancelQueries({ queryKey: projectKeys.detail(id) });
+      queryClient.setQueryData<ProjectDto>(
+        projectKeys.detail(id),
+        (project) => project && { ...project, systemDesign },
+      );
+    },
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey }) === 1) {
+        void queryClient.invalidateQueries({ queryKey: projectKeys.detail(id) });
+      }
+      void queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
   });
 }
 

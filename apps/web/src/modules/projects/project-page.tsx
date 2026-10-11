@@ -15,7 +15,7 @@ export function ProjectPage() {
   const project = useProject(projectId);
 
   return (
-    <Page>
+    <Page width="full">
       <Link to="/projects" className="text-sm text-zinc-600 hover:underline">
         ← Projects
       </Link>
@@ -41,7 +41,10 @@ export function ProjectPage() {
             {formatTimestamp(project.data.updatedAt)}
           </p>
           <DesignSummary design={project.data.systemDesign} />
-          <ScenarioSection design={project.data.systemDesign} />
+          <ScenarioSection
+            projectId={project.data.id}
+            design={project.data.systemDesign}
+          />
           <SystemDesignEditor
             key={formatSystemDesign(project.data.systemDesign)}
             projectId={project.data.id}

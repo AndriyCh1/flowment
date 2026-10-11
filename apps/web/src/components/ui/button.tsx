@@ -3,6 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 const variants = {
   primary: 'bg-zinc-900 text-white hover:bg-zinc-700',
   secondary: 'border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50',
+  danger: 'border border-red-300 bg-white text-red-700 hover:bg-red-50',
 };
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
