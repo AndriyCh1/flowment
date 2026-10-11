@@ -4,13 +4,20 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { DatabaseModule } from '../infrastructure/database';
 import { RedisModule } from '../infrastructure/redis';
+import { ProjectsModule } from '../modules/projects';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { AppThrottlerModule } from './throttler';
 
 @Module({
-  imports: [DatabaseModule, RedisModule, AppThrottlerModule, HealthModule],
+  imports: [
+    DatabaseModule,
+    RedisModule,
+    AppThrottlerModule,
+    HealthModule,
+    ProjectsModule,
+  ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
