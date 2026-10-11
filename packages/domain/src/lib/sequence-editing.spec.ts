@@ -13,7 +13,6 @@ const request: InteractionStep = {
   from: 'client',
   to: 'api',
   text: 'POST /uploads',
-  semantics: { stateEffects: ['upload accepted'], operationKind: 'request' },
 };
 
 const note = { id: 'note', type: 'note', text: 'Wait for lock', componentId: 'api' } as const;
@@ -41,10 +40,6 @@ describe('insertStep', () => {
     expect(stepIds(insertStep(scenario, added, 0))).toEqual(['added', 'request', 'note', 'response']);
     expect(stepIds(insertStep(scenario, added, 2))).toEqual(['request', 'note', 'added', 'response']);
     expect(stepIds(insertStep(scenario, added, 3))).toEqual(['request', 'note', 'response', 'added']);
-  });
-
-  it('inserts an interaction without semantics', () => {
-    expect(insertStep(scenario, added, 3).steps[3]).toEqual(added);
   });
 
   it('does not change the original scenario', () => {

@@ -1,8 +1,4 @@
-import {
-  InteractionSemanticsSchema,
-  SequenceScenarioSchema,
-  SequenceStepSchema,
-} from './scenario.js';
+import { SequenceScenarioSchema, SequenceStepSchema } from './scenario.js';
 
 const interaction = {
   id: 'step-1',
@@ -41,32 +37,6 @@ describe('SequenceStepSchema', () => {
   it('allows an interaction from a component to itself', () => {
     const step = { ...interaction, from: 'worker', to: 'worker', text: 'Validate parsed file' };
     expect(SequenceStepSchema.safeParse(step).success).toBe(true);
-  });
-});
-
-describe('InteractionSemanticsSchema', () => {
-  it('accepts every field as optional', () => {
-    expect(InteractionSemanticsSchema.parse({})).toEqual({});
-  });
-
-  it('parses confirmed semantics', () => {
-    const semantics = {
-      stateEffects: ['job marked processing'],
-      operationKind: 'read',
-    };
-    expect(InteractionSemanticsSchema.parse(semantics)).toEqual(semantics);
-  });
-
-  it('rejects an unknown operation kind', () => {
-    expect(InteractionSemanticsSchema.safeParse({ operationKind: 'delete' }).success).toBe(false);
-  });
-
-  it('rejects suggestion metadata so only confirmed semantics persist', () => {
-    const result = InteractionSemanticsSchema.safeParse({
-      operationKind: 'read',
-      confidence: 0.8,
-    });
-    expect(result.success).toBe(false);
   });
 });
 

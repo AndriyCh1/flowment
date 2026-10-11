@@ -18,7 +18,6 @@ const upload: SequenceScenario = {
       from: 'client',
       to: 'api',
       text: 'POST /uploads',
-      semantics: { operationKind: 'request' },
     },
     { id: 'note', type: 'note', text: 'Wait for lock', componentId: 'api' },
   ],

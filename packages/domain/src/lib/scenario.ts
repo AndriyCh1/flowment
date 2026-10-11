@@ -2,32 +2,12 @@ import { z } from 'zod';
 import { IdSchema } from './id.js';
 import { reportDuplicateIds } from './validation.js';
 
-export const OperationKindSchema = z.enum([
-  'read',
-  'write',
-  'request',
-  'response',
-  'message',
-  'internal',
-  'other',
-]);
-
-export type OperationKind = z.infer<typeof OperationKindSchema>;
-
-export const InteractionSemanticsSchema = z.strictObject({
-  stateEffects: z.array(z.string()).optional(),
-  operationKind: OperationKindSchema.optional(),
-});
-
-export type InteractionSemantics = z.infer<typeof InteractionSemanticsSchema>;
-
 export const InteractionStepSchema = z.object({
   id: IdSchema,
   type: z.literal('interaction'),
   from: IdSchema,
   to: IdSchema,
   text: z.string(),
-  semantics: InteractionSemanticsSchema.optional(),
 });
 
 export type InteractionStep = z.infer<typeof InteractionStepSchema>;
