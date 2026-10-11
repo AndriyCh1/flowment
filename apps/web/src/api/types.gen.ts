@@ -43,10 +43,6 @@ export type CreateProjectDto = {
       id: string;
       title: string;
       description?: string;
-      initialFacts: Array<{
-        componentId: string;
-        fact: string;
-      }>;
       steps: Array<
         | {
             id: string;
@@ -55,8 +51,6 @@ export type CreateProjectDto = {
             to: string;
             text: string;
             semantics?: {
-              uses?: Array<string>;
-              receiverGains?: Array<string>;
               stateEffects?: Array<string>;
               operationKind?:
                 | 'read'
@@ -109,10 +103,6 @@ export type ProjectDto = {
       id: string;
       title: string;
       description?: string;
-      initialFacts: Array<{
-        componentId: string;
-        fact: string;
-      }>;
       steps: Array<
         | {
             id: string;
@@ -121,8 +111,6 @@ export type ProjectDto = {
             to: string;
             text: string;
             semantics?: {
-              uses?: Array<string>;
-              receiverGains?: Array<string>;
               stateEffects?: Array<string>;
               operationKind?:
                 | 'read'
@@ -193,10 +181,6 @@ export type UpdateProjectDto = {
       id: string;
       title: string;
       description?: string;
-      initialFacts: Array<{
-        componentId: string;
-        fact: string;
-      }>;
       steps: Array<
         | {
             id: string;
@@ -205,8 +189,6 @@ export type UpdateProjectDto = {
             to: string;
             text: string;
             semantics?: {
-              uses?: Array<string>;
-              receiverGains?: Array<string>;
               stateEffects?: Array<string>;
               operationKind?:
                 | 'read'

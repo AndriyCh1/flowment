@@ -16,10 +16,3 @@ export function applyScenarioForm(
     ? { ...scenario, title, description }
     : { ...scenario, title };
 }
-
-export const InitialFactFormSchema = z.object({
-  componentId: z.string().min(1, 'Choose a component'),
-  fact: z.string().trim().min(1, 'Enter a fact'),
-});
-
-export type InitialFactFormValues = z.infer<typeof InitialFactFormSchema>;

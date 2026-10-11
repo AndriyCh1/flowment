@@ -17,23 +17,23 @@ export function ComponentDeleteConfirmation({
   onConfirm,
   onCancel,
 }: ComponentDeleteConfirmationProps) {
-  const referenceCount = usages.reduce(
-    (count, usage) => count + usage.steps.length + usage.initialFacts.length,
+  const stepCount = usages.reduce(
+    (count, usage) => count + usage.steps.length,
     0,
   );
 
   return (
     <InlineConfirmation
-      confirmLabel={`Delete component and ${referenceCount} ${referenceCount === 1 ? 'reference' : 'references'}`}
+      confirmLabel={`Delete component and ${stepCount} ${stepCount === 1 ? 'step' : 'steps'}`}
       onConfirm={onConfirm}
       onCancel={onCancel}
     >
       <p>
         {participantName(component)} is still in use. Deleting it also removes
-        these steps and initial facts:
+        these steps:
       </p>
       <ul className="space-y-2">
-        {usages.map(({ scenario, steps, initialFacts }) => (
+        {usages.map(({ scenario, steps }) => (
           <li key={scenario.id}>
             <p className="font-medium wrap-anywhere">
               {scenarioTitle(scenario)}
@@ -43,9 +43,6 @@ export function ComponentDeleteConfirmation({
                 <li key={step.id}>
                   Step {index + 1}: {describeStep(step, components)}
                 </li>
-              ))}
-              {initialFacts.map(({ fact }, index) => (
-                <li key={`${index}:${fact}`}>Initial fact: {fact}</li>
               ))}
             </ul>
           </li>

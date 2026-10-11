@@ -1,5 +1,4 @@
-import { factsMatch } from './fact.js';
-import type { InitialFact, SequenceScenario } from './scenario.js';
+import type { SequenceScenario } from './scenario.js';
 import type { SystemDesign } from './system-design.js';
 
 function scenarioIndex(design: SystemDesign, scenarioId: string): number {
@@ -42,9 +41,6 @@ export function duplicateScenario(
     ...original,
     id: copyId,
     title: original.title.trim() ? `${original.title} (copy)` : original.title,
-    initialFacts: original.initialFacts.map((initialFact) => ({
-      ...initialFact,
-    })),
     steps: original.steps.map((step) => ({ ...step, id: createStepId() })),
   };
   const scenarios = [...design.scenarios];
@@ -61,47 +57,6 @@ export function deleteScenario(
     ...design,
     scenarios: design.scenarios.filter(
       (_scenario, currentIndex) => currentIndex !== index,
-    ),
-  };
-}
-
-export function hasInitialFact(
-  scenario: SequenceScenario,
-  { componentId, fact }: InitialFact,
-): boolean {
-  return scenario.initialFacts.some(
-    (current) =>
-      current.componentId === componentId && factsMatch(current.fact, fact),
-  );
-}
-
-export function addInitialFact(
-  scenario: SequenceScenario,
-  initialFact: InitialFact,
-): SequenceScenario {
-  return {
-    ...scenario,
-    initialFacts: [...scenario.initialFacts, initialFact],
-  };
-}
-
-export function removeInitialFact(
-  scenario: SequenceScenario,
-  index: number,
-): SequenceScenario {
-  if (
-    !Number.isInteger(index) ||
-    index < 0 ||
-    index >= scenario.initialFacts.length
-  ) {
-    throw new RangeError(
-      `Initial fact position ${index} is outside 0..${scenario.initialFacts.length - 1}`,
-    );
-  }
-  return {
-    ...scenario,
-    initialFacts: scenario.initialFacts.filter(
-      (_initialFact, currentIndex) => currentIndex !== index,
     ),
   };
 }

@@ -22,7 +22,6 @@ export function ScenarioDetails({
   const [mode, setMode] = useState<'view' | 'edit' | 'delete'>('view');
   const headingId = useId();
   const stepCount = scenario.steps.length;
-  const factCount = scenario.initialFacts.length;
 
   return (
     <section
@@ -54,11 +53,7 @@ export function ScenarioDetails({
           <Button
             variant="danger"
             disabled={mode === 'delete'}
-            onClick={() =>
-              stepCount === 0 && factCount === 0
-                ? onDelete()
-                : setMode('delete')
-            }
+            onClick={() => (stepCount === 0 ? onDelete() : setMode('delete'))}
           >
             Delete
           </Button>
@@ -84,16 +79,11 @@ export function ScenarioDetails({
           onCancel={() => setMode('view')}
         >
           <p>
-            Deleting {scenarioTitle(scenario)} also removes its{' '}
-            {countLabel(stepCount, 'step')} and{' '}
-            {countLabel(factCount, 'initial fact')}. Components are kept.
+            Deleting {scenarioTitle(scenario)} also removes its {stepCount}{' '}
+            {stepCount === 1 ? 'step' : 'steps'}. Components are kept.
           </p>
         </InlineConfirmation>
       )}
     </section>
   );
-}
-
-function countLabel(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }

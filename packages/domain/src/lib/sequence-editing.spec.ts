@@ -13,7 +13,7 @@ const request: InteractionStep = {
   from: 'client',
   to: 'api',
   text: 'POST /uploads',
-  semantics: { uses: ['selectedFile'], operationKind: 'request' },
+  semantics: { stateEffects: ['upload accepted'], operationKind: 'request' },
 };
 
 const note = { id: 'note', type: 'note', text: 'Wait for lock', componentId: 'api' } as const;
@@ -29,7 +29,6 @@ const response = {
 const scenario: SequenceScenario = {
   id: 'upload',
   title: 'Upload',
-  initialFacts: [],
   steps: [request, note, response],
 };
 

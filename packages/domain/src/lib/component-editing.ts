@@ -1,15 +1,10 @@
 import type { Component } from './component.js';
-import type {
-  InitialFact,
-  SequenceScenario,
-  SequenceStep,
-} from './scenario.js';
+import type { SequenceScenario, SequenceStep } from './scenario.js';
 import type { SystemDesign } from './system-design.js';
 
 export type ComponentUsage = {
   scenario: SequenceScenario;
   steps: { step: SequenceStep; index: number }[];
-  initialFacts: InitialFact[];
 };
 
 function assertComponentExists(
@@ -62,12 +57,7 @@ export function findComponentUsages(
     const steps = scenario.steps.flatMap((step, index) =>
       stepUsesComponent(step, componentId) ? [{ step, index }] : [],
     );
-    const initialFacts = scenario.initialFacts.filter(
-      (initialFact) => initialFact.componentId === componentId,
-    );
-    return steps.length > 0 || initialFacts.length > 0
-      ? [{ scenario, steps, initialFacts }]
-      : [];
+    return steps.length > 0 ? [{ scenario, steps }] : [];
   });
 }
 
@@ -92,9 +82,6 @@ export function deleteComponentWithReferences(
     components: withoutComponent(design, componentId),
     scenarios: design.scenarios.map((scenario) => ({
       ...scenario,
-      initialFacts: scenario.initialFacts.filter(
-        (initialFact) => initialFact.componentId !== componentId,
-      ),
       steps: scenario.steps.filter(
         (step) => !stepUsesComponent(step, componentId),
       ),

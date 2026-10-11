@@ -1,14 +1,6 @@
 import { z } from 'zod';
-import { FactSchema } from './fact.js';
 import { IdSchema } from './id.js';
 import { reportDuplicateIds } from './validation.js';
-
-export const InitialFactSchema = z.object({
-  componentId: IdSchema,
-  fact: FactSchema,
-});
-
-export type InitialFact = z.infer<typeof InitialFactSchema>;
 
 export const OperationKindSchema = z.enum([
   'read',
@@ -23,8 +15,6 @@ export const OperationKindSchema = z.enum([
 export type OperationKind = z.infer<typeof OperationKindSchema>;
 
 export const InteractionSemanticsSchema = z.strictObject({
-  uses: z.array(FactSchema).optional(),
-  receiverGains: z.array(FactSchema).optional(),
   stateEffects: z.array(z.string()).optional(),
   operationKind: OperationKindSchema.optional(),
 });
@@ -63,7 +53,6 @@ export const SequenceScenarioSchema = z
     id: IdSchema,
     title: z.string(),
     description: z.string().optional(),
-    initialFacts: z.array(InitialFactSchema),
     steps: z.array(SequenceStepSchema),
   })
   .superRefine((scenario, ctx) => {

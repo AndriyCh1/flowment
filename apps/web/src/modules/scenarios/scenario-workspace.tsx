@@ -8,7 +8,6 @@ import {
 } from '@flowment/domain';
 import { useState } from 'react';
 import { SequenceEditor } from '../sequence';
-import { InitialFacts } from './initial-facts';
 import { ScenarioDetails } from './scenario-details';
 import { ScenarioForm } from './scenario-form';
 import {
@@ -42,7 +41,7 @@ export function ScenarioWorkspace({
 
   const createScenario = (values: ScenarioFormValues) => {
     const created = applyScenarioForm(
-      { id: crypto.randomUUID(), title: '', initialFacts: [], steps: [] },
+      { id: crypto.randomUUID(), title: '', steps: [] },
       values,
     );
     onDesignChange(addScenario(design, created));
@@ -88,19 +87,12 @@ export function ScenarioWorkspace({
       )}
       {scenario ? (
         <div key={scenario.id} className="space-y-3">
-          <div className="grid items-start gap-3 xl:grid-cols-2">
-            <ScenarioDetails
-              scenario={scenario}
-              onSave={saveScenario}
-              onDuplicate={() => copyScenario(scenario)}
-              onDelete={() => removeScenario(scenario)}
-            />
-            <InitialFacts
-              components={components}
-              scenario={scenario}
-              onScenarioChange={saveScenario}
-            />
-          </div>
+          <ScenarioDetails
+            scenario={scenario}
+            onSave={saveScenario}
+            onDuplicate={() => copyScenario(scenario)}
+            onDelete={() => removeScenario(scenario)}
+          />
           <SequenceEditor
             components={components}
             scenario={scenario}

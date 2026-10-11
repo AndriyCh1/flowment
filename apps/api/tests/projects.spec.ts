@@ -29,7 +29,6 @@ const uploadDesign: SystemDesign = {
     {
       id: 'upload',
       title: 'Successful upload',
-      initialFacts: [{ componentId: 'client', fact: 'selectedFile' }],
       steps: [
         {
           id: 's1',
@@ -38,8 +37,7 @@ const uploadDesign: SystemDesign = {
           to: 'api',
           text: 'Upload CSV',
           semantics: {
-            uses: ['selectedFile'],
-            receiverGains: ['SourceFileKey'],
+            stateEffects: ['upload stored'],
             operationKind: 'request',
           },
         },
@@ -65,7 +63,6 @@ const brokenDesign: SystemDesign = {
     {
       id: 'upload',
       title: 'Broken',
-      initialFacts: [],
       steps: [
         { id: 's1', type: 'interaction', from: 'ghost', to: 'api', text: 'x' },
       ],
@@ -155,7 +152,7 @@ describe('Projects API', () => {
                     from: 'client',
                     to: 'api',
                     text: 'Upload',
-                    semantics: { uses: ['selectedFile'], confidence: 0.4 },
+                    semantics: { operationKind: 'request', confidence: 0.4 },
                   },
                 ],
               },

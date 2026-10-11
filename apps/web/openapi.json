@@ -404,25 +404,6 @@
                     "description": {
                       "type": "string"
                     },
-                    "initialFacts": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "componentId": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "fact": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "componentId",
-                          "fact"
-                        ]
-                      }
-                    },
                     "steps": {
                       "type": "array",
                       "items": {
@@ -454,18 +435,6 @@
                               "semantics": {
                                 "type": "object",
                                 "properties": {
-                                  "uses": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "receiverGains": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
                                   "stateEffects": {
                                     "type": "array",
                                     "items": {
@@ -530,7 +499,6 @@
                   "required": [
                     "id",
                     "title",
-                    "initialFacts",
                     "steps"
                   ]
                 }
@@ -652,25 +620,6 @@
                     "description": {
                       "type": "string"
                     },
-                    "initialFacts": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "componentId": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "fact": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "componentId",
-                          "fact"
-                        ]
-                      }
-                    },
                     "steps": {
                       "type": "array",
                       "items": {
@@ -702,18 +651,6 @@
                               "semantics": {
                                 "type": "object",
                                 "properties": {
-                                  "uses": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "receiverGains": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
                                   "stateEffects": {
                                     "type": "array",
                                     "items": {
@@ -778,7 +715,6 @@
                   "required": [
                     "id",
                     "title",
-                    "initialFacts",
                     "steps"
                   ]
                 }
@@ -990,25 +926,6 @@
                     "description": {
                       "type": "string"
                     },
-                    "initialFacts": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "componentId": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "fact": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "componentId",
-                          "fact"
-                        ]
-                      }
-                    },
                     "steps": {
                       "type": "array",
                       "items": {
@@ -1040,18 +957,6 @@
                               "semantics": {
                                 "type": "object",
                                 "properties": {
-                                  "uses": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "receiverGains": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
                                   "stateEffects": {
                                     "type": "array",
                                     "items": {
@@ -1116,7 +1021,6 @@
                   "required": [
                     "id",
                     "title",
-                    "initialFacts",
                     "steps"
                   ]
                 }

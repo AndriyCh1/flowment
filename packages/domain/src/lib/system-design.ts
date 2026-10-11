@@ -18,19 +18,8 @@ export const SystemDesignSchema = z
     const componentIds = new Set(design.components.map((component) => component.id));
 
     design.scenarios.forEach((scenario, scenarioIndex) => {
-      const scenarioPath = ['scenarios', scenarioIndex];
-
-      scenario.initialFacts.forEach((initialFact, factIndex) => {
-        reportUnknownComponent(
-          componentIds,
-          initialFact.componentId,
-          [...scenarioPath, 'initialFacts', factIndex, 'componentId'],
-          ctx,
-        );
-      });
-
       scenario.steps.forEach((step, stepIndex) => {
-        const stepPath = [...scenarioPath, 'steps', stepIndex];
+        const stepPath = ['scenarios', scenarioIndex, 'steps', stepIndex];
         if (step.type === 'interaction') {
           reportUnknownComponent(componentIds, step.from, [...stepPath, 'from'], ctx);
           reportUnknownComponent(componentIds, step.to, [...stepPath, 'to'], ctx);

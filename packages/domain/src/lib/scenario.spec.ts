@@ -49,10 +49,8 @@ describe('InteractionSemanticsSchema', () => {
     expect(InteractionSemanticsSchema.parse({})).toEqual({});
   });
 
-  it('parses confirmed semantics and keeps fact spelling', () => {
+  it('parses confirmed semantics', () => {
     const semantics = {
-      uses: [' jobId'],
-      receiverGains: ['SourceFileKey', 'status'],
       stateEffects: ['job marked processing'],
       operationKind: 'read',
     };
@@ -63,13 +61,11 @@ describe('InteractionSemanticsSchema', () => {
     expect(InteractionSemanticsSchema.safeParse({ operationKind: 'delete' }).success).toBe(false);
   });
 
-  it('rejects blank facts in uses and receiverGains', () => {
-    expect(InteractionSemanticsSchema.safeParse({ uses: [' '] }).success).toBe(false);
-    expect(InteractionSemanticsSchema.safeParse({ receiverGains: [''] }).success).toBe(false);
-  });
-
   it('rejects suggestion metadata so only confirmed semantics persist', () => {
-    const result = InteractionSemanticsSchema.safeParse({ uses: ['jobId'], confidence: 0.8 });
+    const result = InteractionSemanticsSchema.safeParse({
+      operationKind: 'read',
+      confidence: 0.8,
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -78,7 +74,6 @@ describe('SequenceScenarioSchema', () => {
   const scenario = {
     id: 'upload',
     title: 'Successful upload',
-    initialFacts: [{ componentId: 'client', fact: 'selectedFile' }],
     steps: [interaction, note],
   };
 
@@ -101,13 +96,5 @@ describe('SequenceScenarioSchema', () => {
     });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(['steps', 1, 'id']);
-  });
-
-  it('rejects a blank initial fact', () => {
-    const result = SequenceScenarioSchema.safeParse({
-      ...scenario,
-      initialFacts: [{ componentId: 'client', fact: '  ' }],
-    });
-    expect(result.success).toBe(false);
   });
 });

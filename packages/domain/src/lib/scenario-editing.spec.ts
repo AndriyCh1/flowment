@@ -1,11 +1,8 @@
 import type { SequenceScenario } from './scenario.js';
 import {
-  addInitialFact,
   addScenario,
   deleteScenario,
   duplicateScenario,
-  hasInitialFact,
-  removeInitialFact,
   replaceScenario,
 } from './scenario-editing.js';
 import { SystemDesignSchema, type SystemDesign } from './system-design.js';
@@ -14,10 +11,6 @@ const upload: SequenceScenario = {
   id: 'upload',
   title: 'Upload',
   description: 'Happy path',
-  initialFacts: [
-    { componentId: 'client', fact: 'selectedFile' },
-    { componentId: 'api', fact: 'signingKey' },
-  ],
   steps: [
     {
       id: 'request',
@@ -25,7 +18,7 @@ const upload: SequenceScenario = {
       from: 'client',
       to: 'api',
       text: 'POST /uploads',
-      semantics: { uses: ['selectedFile'], operationKind: 'request' },
+      semantics: { operationKind: 'request' },
     },
     { id: 'note', type: 'note', text: 'Wait for lock', componentId: 'api' },
   ],
@@ -34,7 +27,6 @@ const upload: SequenceScenario = {
 const lookup: SequenceScenario = {
   id: 'lookup',
   title: 'Status lookup',
-  initialFacts: [],
   steps: [],
 };
 
@@ -59,7 +51,6 @@ describe('addScenario', () => {
   const retry: SequenceScenario = {
     id: 'retry',
     title: 'Retry',
-    initialFacts: [],
     steps: [],
   };
 
@@ -101,7 +92,7 @@ describe('duplicateScenario', () => {
     expect(scenarioIds(result)).toEqual(['upload', 'copy', 'lookup']);
   });
 
-  it('copies description, initial facts and steps with new step ids', () => {
+  it('copies description and steps with new step ids', () => {
     const result = duplicateScenario(design, 'upload', 'copy', counter('step'));
     expect(result.scenarios[1]).toEqual({
       ...upload,
@@ -126,13 +117,10 @@ describe('duplicateScenario', () => {
     expect(result.scenarios[2].title).toBe(' ');
   });
 
-  it('does not share the initial facts with the original', () => {
+  it('does not change the original scenario', () => {
     const result = duplicateScenario(design, 'upload', 'copy', counter('step'));
-    expect(result.scenarios[1].initialFacts).not.toBe(upload.initialFacts);
-    expect(result.scenarios[1].initialFacts[0]).not.toBe(
-      upload.initialFacts[0],
-    );
     expect(result.scenarios[0]).toBe(upload);
+    expect(upload.steps.map((step) => step.id)).toEqual(['request', 'note']);
   });
 
   it('rejects an unknown scenario', () => {
@@ -159,64 +147,5 @@ describe('deleteScenario', () => {
     expect(() => deleteScenario(design, 'missing')).toThrow(
       'Unknown scenario "missing"',
     );
-  });
-});
-
-describe('hasInitialFact', () => {
-  it('matches the same component and fact, ignoring case and outer spaces', () => {
-    expect(
-      hasInitialFact(upload, { componentId: 'client', fact: 'selectedFile' }),
-    ).toBe(true);
-    expect(
-      hasInitialFact(upload, { componentId: 'client', fact: ' SELECTEDFILE ' }),
-    ).toBe(true);
-  });
-
-  it('does not match the fact on another component or a different fact', () => {
-    expect(
-      hasInitialFact(upload, { componentId: 'api', fact: 'selectedFile' }),
-    ).toBe(false);
-    expect(
-      hasInitialFact(upload, { componentId: 'client', fact: 'selected' }),
-    ).toBe(false);
-  });
-});
-
-describe('addInitialFact', () => {
-  it('appends the fact with its original spelling', () => {
-    const result = addInitialFact(upload, {
-      componentId: 'client',
-      fact: 'authenticatedUser',
-    });
-    expect(result.initialFacts).toEqual([
-      ...upload.initialFacts,
-      { componentId: 'client', fact: 'authenticatedUser' },
-    ]);
-    expect(result.steps).toBe(upload.steps);
-  });
-
-  it('does not change the original scenario', () => {
-    addInitialFact(upload, {
-      componentId: 'client',
-      fact: 'authenticatedUser',
-    });
-    expect(upload.initialFacts).toHaveLength(2);
-  });
-});
-
-describe('removeInitialFact', () => {
-  it('removes only the fact at the given position', () => {
-    expect(removeInitialFact(upload, 0).initialFacts).toEqual([
-      { componentId: 'api', fact: 'signingKey' },
-    ]);
-    expect(removeInitialFact(upload, 1).initialFacts).toEqual([
-      { componentId: 'client', fact: 'selectedFile' },
-    ]);
-  });
-
-  it('rejects a position outside the list', () => {
-    expect(() => removeInitialFact(upload, 2)).toThrow(RangeError);
-    expect(() => removeInitialFact(upload, -1)).toThrow(RangeError);
-    expect(() => removeInitialFact(upload, 0.5)).toThrow(RangeError);
   });
 });

@@ -11,10 +11,6 @@ import { SystemDesignSchema, type SystemDesign } from './system-design.js';
 const upload: SequenceScenario = {
   id: 'upload',
   title: 'Upload',
-  initialFacts: [
-    { componentId: 'client', fact: 'selectedFile' },
-    { componentId: 'api', fact: 'signingKey' },
-  ],
   steps: [
     {
       id: 'request',
@@ -39,7 +35,6 @@ const upload: SequenceScenario = {
 const lookup: SequenceScenario = {
   id: 'lookup',
   title: 'Status lookup',
-  initialFacts: [{ componentId: 'client', fact: 'jobId' }],
   steps: [
     { id: 'read', type: 'interaction', from: 'client', to: 'db', text: 'Read' },
   ],
@@ -119,7 +114,7 @@ describe('replaceComponent', () => {
 });
 
 describe('findComponentUsages', () => {
-  it('finds sender, receiver, self-interaction, note and initial fact references', () => {
+  it('finds sender, receiver, self-interaction and note references', () => {
     expect(findComponentUsages(design, 'api')).toEqual([
       {
         scenario: upload,
@@ -129,7 +124,6 @@ describe('findComponentUsages', () => {
           { step: upload.steps[2], index: 2 },
           { step: upload.steps[3], index: 3 },
         ],
-        initialFacts: [{ componentId: 'api', fact: 'signingKey' }],
       },
     ]);
   });
@@ -143,29 +137,7 @@ describe('findComponentUsages', () => {
     expect(usages[1]).toEqual({
       scenario: lookup,
       steps: [{ step: lookup.steps[0], index: 0 }],
-      initialFacts: [{ componentId: 'client', fact: 'jobId' }],
     });
-  });
-
-  it('reports a component referenced only by an initial fact', () => {
-    const factOnly: SystemDesign = {
-      ...design,
-      scenarios: [
-        {
-          id: 'idle',
-          title: 'Idle',
-          initialFacts: [{ componentId: 'queue', fact: 'backlog' }],
-          steps: [],
-        },
-      ],
-    };
-    expect(findComponentUsages(factOnly, 'queue')).toEqual([
-      {
-        scenario: factOnly.scenarios[0],
-        steps: [],
-        initialFacts: [{ componentId: 'queue', fact: 'backlog' }],
-      },
-    ]);
   });
 
   it('returns nothing for an unreferenced component', () => {
@@ -195,16 +167,13 @@ describe('deleteComponent', () => {
 });
 
 describe('deleteComponentWithReferences', () => {
-  it('removes the component, the steps that use it and its initial facts', () => {
+  it('removes the component and the steps that use it', () => {
     const result = deleteComponentWithReferences(design, 'api');
     expect(componentIds(result)).toEqual(['client', 'db', 'queue']);
     expect(stepIds(result.scenarios[0])).toEqual(['shared-note']);
-    expect(result.scenarios[0].initialFacts).toEqual([
-      { componentId: 'client', fact: 'selectedFile' },
-    ]);
   });
 
-  it('keeps steps and facts that do not reference the component', () => {
+  it('keeps steps that do not reference the component', () => {
     const result = deleteComponentWithReferences(design, 'api');
     expect(result.scenarios[1]).toEqual(lookup);
     expect(result.assumptions).toBe(design.assumptions);
@@ -219,7 +188,6 @@ describe('deleteComponentWithReferences', () => {
       'shared-note',
     ]);
     expect(stepIds(result.scenarios[1])).toEqual([]);
-    expect(result.scenarios[1].initialFacts).toEqual([]);
     expect(SystemDesignSchema.safeParse(result).success).toBe(true);
     expect(findComponentUsages(result, 'client')).toEqual([]);
   });
