@@ -6,6 +6,7 @@ import { errorMessage, isNotFound } from '../../shared/api-error';
 import { formatTimestamp } from './format-timestamp';
 import { ProjectNameForm } from './project-name-form';
 import { useProject } from './project-queries';
+import { ScenarioSection } from './scenario-section';
 import { formatSystemDesign } from './system-design-json';
 import { SystemDesignEditor } from './system-design-editor';
 
@@ -40,6 +41,7 @@ export function ProjectPage() {
             {formatTimestamp(project.data.updatedAt)}
           </p>
           <DesignSummary design={project.data.systemDesign} />
+          <ScenarioSection design={project.data.systemDesign} />
           <SystemDesignEditor
             key={formatSystemDesign(project.data.systemDesign)}
             projectId={project.data.id}
