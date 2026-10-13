@@ -9,7 +9,7 @@ src/
 ├── shared/            # business-agnostic primitives
 ├── config/            # env → validated, typed configuration
 ├── modules/           # business features
-├── infrastructure/    # technical adapters (Postgres, Redis, logging)
+├── infrastructure/    # technical adapters (Postgres, Redis, AI model, logging)
 └── scripts/           # standalone entry points (generate-openapi)
 ```
 
@@ -42,7 +42,7 @@ Code that is reusable **without knowledge of any business module**. Being used b
 
 | Path | Contents |
 | --- | --- |
-| `errors/` | `ApplicationError` (abstract base with a `code`) and `ErrorCode` (`NOT_FOUND`, `CONFLICT`, `VALIDATION`, `UNAUTHORIZED`, `FORBIDDEN`). |
+| `errors/` | `ApplicationError` (abstract base with a `code`) and `ErrorCode` (`NOT_FOUND`, `CONFLICT`, `VALIDATION`, `UNAUTHORIZED`, `FORBIDDEN`, `UNAVAILABLE`). |
 | `http/` | `ErrorResponseDto`, `PaginationQuerySchema` + `paginatedSchema()`, `REQUEST_ID_HEADER` + `getRequestId()`. |
 | `zod/openapi-helpers.ts` | `isoDate` codec and `nullableString()` for OpenAPI-friendly schemas. |
 | `utils/with-timeout.ts` | Promise timeout helper. |
@@ -80,6 +80,7 @@ Generic technical capabilities. Each folder exposes a public `index.ts`.
 | `database/` | `DatabaseModule` (global; ends the pool on shutdown), `InjectDb()`, `Db`, `DatabaseHealth`, and every table from `schema/`. `migrate.ts` is a standalone script; drizzle-kit writes to `migrations/`. |
 | `database/schema/` | **All** Drizzle table definitions, one file per table, re-exported from `schema/index.ts`. This is the single source for drizzle-kit (`drizzle.config.ts`) and the typed client. |
 | `redis/` | `RedisModule` (global; `quit()` on shutdown, `disconnect()` if never connected), `InjectRedis()`, `REDIS_CLIENT`, `RedisHealth`. The client uses `lazyConnect`, so building the app (tests, the openapi script) needs no Redis. |
+| `ai/` | `AiModule` (global), `InjectAiClient()`, `AI_CLIENT`, `AiClient` (`generateObject({ name, instructions, input, schema })` returns model output validated against the zod schema). With `AI_PROVIDER=openai` it is backed by the OpenAI Responses API (`responses.parse` with `zodTextFormat`, `store: false`, 45s timeout); with `AI_PROVIDER=mock` every call rejects. Feature modules build their prompts on top of it. |
 | `logging/` | `createLogger()`: Nest `ConsoleLogger`, JSON lines in production and colored text elsewhere, with levels from `LOG_LEVEL`. |
 
 There is no separate logger interface: Nest's `LoggerService` already is one. Code everywhere logs through `new Logger(Context)` from `@nestjs/common`.

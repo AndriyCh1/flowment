@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ProjectDto } from '../../api';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
+import { CoachPanel } from '../coach';
 import { ComponentPanel } from '../design-components';
 import { ScenarioWorkspace } from '../scenarios';
 import { formatTimestamp } from './format-timestamp';
@@ -17,6 +18,9 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const saveDesign = useSaveSystemDesign(project.id);
   const design = project.systemDesign;
   const [rejectedChange, setRejectedChange] = useState(false);
+  const [scenarioId, setScenarioId] = useState<string | null>(null);
+  const activeScenario =
+    design.scenarios.find(({ id }) => id === scenarioId) ?? design.scenarios[0];
 
   const changeDesign = (next: SystemDesign) => {
     const valid = SystemDesignSchema.safeParse(next).success;
@@ -54,11 +58,24 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           </ErrorMessage>
         </div>
       )}
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
         <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           <ComponentPanel design={design} onDesignChange={changeDesign} />
         </aside>
-        <ScenarioWorkspace design={design} onDesignChange={changeDesign} />
+        <ScenarioWorkspace
+          design={design}
+          activeScenarioId={activeScenario?.id}
+          onActiveScenarioChange={setScenarioId}
+          onDesignChange={changeDesign}
+        />
+        <aside className="lg:col-span-2 xl:sticky xl:top-4 xl:col-span-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+          <CoachPanel
+            projectId={project.id}
+            design={design}
+            scenarioId={activeScenario?.id}
+            designSaving={saveDesign.isPending}
+          />
+        </aside>
       </div>
       <details className="mt-8">
         <summary className="cursor-pointer text-sm font-medium text-zinc-700">

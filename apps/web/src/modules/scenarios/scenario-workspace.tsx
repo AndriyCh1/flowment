@@ -18,22 +18,24 @@ import { ScenarioTabs } from './scenario-tabs';
 
 type ScenarioWorkspaceProps = {
   design: SystemDesign;
+  activeScenarioId: string | undefined;
+  onActiveScenarioChange: (scenarioId: string | null) => void;
   onDesignChange: (design: SystemDesign) => void;
 };
 
 export function ScenarioWorkspace({
   design,
+  activeScenarioId,
+  onActiveScenarioChange,
   onDesignChange,
 }: ScenarioWorkspaceProps) {
-  const [scenarioId, setScenarioId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const { components, scenarios } = design;
-  const scenario =
-    scenarios.find(({ id }) => id === scenarioId) ?? scenarios[0];
+  const scenario = scenarios.find(({ id }) => id === activeScenarioId);
 
   const selectScenario = (id: string) => {
     setAdding(false);
-    setScenarioId(id);
+    onActiveScenarioChange(id);
   };
 
   const saveScenario = (next: SequenceScenario) =>
@@ -59,7 +61,9 @@ export function ScenarioWorkspace({
   const removeScenario = (removed: SequenceScenario) => {
     const index = scenarios.indexOf(removed);
     onDesignChange(deleteScenario(design, removed.id));
-    setScenarioId((scenarios[index + 1] ?? scenarios[index - 1])?.id ?? null);
+    onActiveScenarioChange(
+      (scenarios[index + 1] ?? scenarios[index - 1])?.id ?? null,
+    );
   };
 
   return (
