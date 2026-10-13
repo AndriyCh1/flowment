@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import {
   getOptionsToken,
   type ThrottlerModuleOptions,
@@ -26,11 +26,17 @@ export type TestApp = {
   close(): Promise<void>;
 };
 
-export async function createTestApp(): Promise<TestApp> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+export type TestAppOptions = {
+  configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+};
+
+export async function createTestApp({
+  configure = (builder) => builder,
+}: TestAppOptions = {}): Promise<TestApp> {
+  const builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(getOptionsToken())
-    .useValue(throttlerDisabled)
-    .compile();
+    .useValue(throttlerDisabled);
+  const moduleRef = await configure(builder).compile();
 
   const app = moduleRef.createNestApplication({ logger: false });
   configureApp(app);

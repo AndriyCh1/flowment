@@ -18,6 +18,7 @@ const ERROR_CODE_STATUS: Record<ErrorCode, HttpStatus> = {
   [ErrorCode.VALIDATION]: HttpStatus.BAD_REQUEST,
   [ErrorCode.UNAUTHORIZED]: HttpStatus.UNAUTHORIZED,
   [ErrorCode.FORBIDDEN]: HttpStatus.FORBIDDEN,
+  [ErrorCode.UNAVAILABLE]: HttpStatus.SERVICE_UNAVAILABLE,
 };
 
 type NormalizedError = Pick<

@@ -12,6 +12,9 @@ import type {
   CreateProjectData,
   CreateProjectErrors,
   CreateProjectResponses,
+  GetCoachSessionData,
+  GetCoachSessionErrors,
+  GetCoachSessionResponses,
   GetProjectData,
   GetProjectErrors,
   GetProjectResponses,
@@ -23,6 +26,18 @@ import type {
   ListProjectsData,
   ListProjectsErrors,
   ListProjectsResponses,
+  ReplyToCoachData,
+  ReplyToCoachErrors,
+  ReplyToCoachResponses,
+  RequestCoachResponseData,
+  RequestCoachResponseErrors,
+  RequestCoachResponseResponses,
+  ResetCoachSessionData,
+  ResetCoachSessionErrors,
+  ResetCoachSessionResponses,
+  UpdateModelingIntentData,
+  UpdateModelingIntentErrors,
+  UpdateModelingIntentResponses,
   UpdateProjectData,
   UpdateProjectErrors,
   UpdateProjectResponses,
@@ -117,3 +132,85 @@ export const updateProject = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
+
+export const getCoachSession = <ThrowOnError extends boolean = false>(
+  options: Options<GetCoachSessionData, ThrowOnError>,
+): RequestResult<
+  GetCoachSessionResponses,
+  GetCoachSessionErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    GetCoachSessionResponses,
+    GetCoachSessionErrors,
+    ThrowOnError
+  >({ url: '/api/projects/{projectId}/coach', ...options });
+
+export const updateModelingIntent = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateModelingIntentData, ThrowOnError>,
+): RequestResult<
+  UpdateModelingIntentResponses,
+  UpdateModelingIntentErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).put<
+    UpdateModelingIntentResponses,
+    UpdateModelingIntentErrors,
+    ThrowOnError
+  >({
+    url: '/api/projects/{projectId}/coach/intent',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+export const requestCoachResponse = <ThrowOnError extends boolean = false>(
+  options: Options<RequestCoachResponseData, ThrowOnError>,
+): RequestResult<
+  RequestCoachResponseResponses,
+  RequestCoachResponseErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    RequestCoachResponseResponses,
+    RequestCoachResponseErrors,
+    ThrowOnError
+  >({
+    url: '/api/projects/{projectId}/coach/next',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+export const replyToCoach = <ThrowOnError extends boolean = false>(
+  options: Options<ReplyToCoachData, ThrowOnError>,
+): RequestResult<ReplyToCoachResponses, ReplyToCoachErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    ReplyToCoachResponses,
+    ReplyToCoachErrors,
+    ThrowOnError
+  >({
+    url: '/api/projects/{projectId}/coach/reply',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+export const resetCoachSession = <ThrowOnError extends boolean = false>(
+  options: Options<ResetCoachSessionData, ThrowOnError>,
+): RequestResult<
+  ResetCoachSessionResponses,
+  ResetCoachSessionErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    ResetCoachSessionResponses,
+    ResetCoachSessionErrors,
+    ThrowOnError
+  >({ url: '/api/projects/{projectId}/coach/reset', ...options });

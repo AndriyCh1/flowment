@@ -5,6 +5,7 @@ export const ErrorCode = {
   VALIDATION: 'VALIDATION',
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
+  UNAVAILABLE: 'UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

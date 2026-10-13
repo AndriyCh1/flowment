@@ -184,6 +184,75 @@ export type UpdateProjectDto = {
   };
 };
 
+export type CoachSessionDto = {
+  projectId: string;
+  mode: 'exercise' | 'open-project';
+  modelingIntent: string | null;
+  stage:
+    | 'discovering'
+    | 'clarifying'
+    | 'guiding'
+    | 'reviewing'
+    | 'objective-reached';
+  objectives: Array<{
+    id: string;
+    description: string;
+  }>;
+  turns: Array<
+    | {
+        id: string;
+        role: 'learner';
+        createdAt: string;
+        kind: 'answer' | 'unknown' | 'skip' | 'rephrase';
+        text: string;
+        relatedQuestionId: string;
+      }
+    | {
+        id: string;
+        role: 'coach';
+        createdAt: string;
+        output:
+          | {
+              type: 'question';
+              questionId: string;
+              purpose: 'discover' | 'clarify' | 'guide' | 'review';
+              text: string;
+              relatedStepIds?: Array<string>;
+            }
+          | {
+              type: 'next-action';
+              text: string;
+              action:
+                | 'create-scenario'
+                | 'create-component'
+                | 'add-step'
+                | 'record-assumption';
+            }
+          | {
+              type: 'objective-satisfied';
+              evidence: Array<string>;
+              summary: string;
+            };
+      }
+  >;
+  activeQuestionId: string | null;
+  designRevision: string | null;
+};
+
+export type UpdateModelingIntentDto = {
+  modelingIntent: string;
+};
+
+export type CoachNextDto = {
+  scenarioId?: string;
+};
+
+export type CoachReplyDto = {
+  questionId: string;
+  kind: 'answer' | 'unknown' | 'skip' | 'rephrase';
+  text?: string;
+};
+
 export type HealthControllerCheckData = {
   body?: never;
   path?: never;
@@ -306,3 +375,125 @@ export type UpdateProjectResponses = {
 
 export type UpdateProjectResponse =
   UpdateProjectResponses[keyof UpdateProjectResponses];
+
+export type GetCoachSessionData = {
+  body?: never;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach';
+};
+
+export type GetCoachSessionErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+};
+
+export type GetCoachSessionError =
+  GetCoachSessionErrors[keyof GetCoachSessionErrors];
+
+export type GetCoachSessionResponses = {
+  default: CoachSessionDto;
+};
+
+export type GetCoachSessionResponse =
+  GetCoachSessionResponses[keyof GetCoachSessionResponses];
+
+export type UpdateModelingIntentData = {
+  body: UpdateModelingIntentDto;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/intent';
+};
+
+export type UpdateModelingIntentErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+};
+
+export type UpdateModelingIntentError =
+  UpdateModelingIntentErrors[keyof UpdateModelingIntentErrors];
+
+export type UpdateModelingIntentResponses = {
+  default: CoachSessionDto;
+};
+
+export type UpdateModelingIntentResponse =
+  UpdateModelingIntentResponses[keyof UpdateModelingIntentResponses];
+
+export type RequestCoachResponseData = {
+  body: CoachNextDto;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/next';
+};
+
+export type RequestCoachResponseErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+  409: ErrorResponseDto;
+  503: ErrorResponseDto;
+};
+
+export type RequestCoachResponseError =
+  RequestCoachResponseErrors[keyof RequestCoachResponseErrors];
+
+export type RequestCoachResponseResponses = {
+  200: CoachSessionDto;
+};
+
+export type RequestCoachResponseResponse =
+  RequestCoachResponseResponses[keyof RequestCoachResponseResponses];
+
+export type ReplyToCoachData = {
+  body: CoachReplyDto;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/reply';
+};
+
+export type ReplyToCoachErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+  409: ErrorResponseDto;
+};
+
+export type ReplyToCoachError = ReplyToCoachErrors[keyof ReplyToCoachErrors];
+
+export type ReplyToCoachResponses = {
+  200: CoachSessionDto;
+};
+
+export type ReplyToCoachResponse =
+  ReplyToCoachResponses[keyof ReplyToCoachResponses];
+
+export type ResetCoachSessionData = {
+  body?: never;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/reset';
+};
+
+export type ResetCoachSessionErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+};
+
+export type ResetCoachSessionError =
+  ResetCoachSessionErrors[keyof ResetCoachSessionErrors];
+
+export type ResetCoachSessionResponses = {
+  200: CoachSessionDto;
+};
+
+export type ResetCoachSessionResponse =
+  ResetCoachSessionResponses[keyof ResetCoachSessionResponses];

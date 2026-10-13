@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
     environment: 'node',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     passWithNoTests: true,
+    fileParallelism: false,
     globalSetup: ['./tests/global-setup.ts'],
     env: {
       DB_HOST: 'localhost',

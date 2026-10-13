@@ -2,8 +2,10 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { AiModule } from '../infrastructure/ai';
 import { DatabaseModule } from '../infrastructure/database';
 import { RedisModule } from '../infrastructure/redis';
+import { CoachModule } from '../modules/coach';
 import { ProjectsModule } from '../modules/projects';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { HealthModule } from './health/health.module';
@@ -14,9 +16,11 @@ import { AppThrottlerModule } from './throttler';
   imports: [
     DatabaseModule,
     RedisModule,
+    AiModule,
     AppThrottlerModule,
     HealthModule,
     ProjectsModule,
+    CoachModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
