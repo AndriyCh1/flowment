@@ -108,6 +108,7 @@ describe('Projects API', () => {
         id: expect.stringMatching(/^[0-9a-f-]{36}$/),
         name: 'CSV import',
         systemDesign: { components: [], scenarios: [], assumptions: [] },
+        exerciseId: null,
         createdAt: expect.any(String),
         updatedAt: body.createdAt,
       });

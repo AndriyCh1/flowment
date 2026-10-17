@@ -386,6 +386,7 @@ describe('Coach API', () => {
           context: {
             projectId: project.id,
             mode: 'open-project',
+            exercise: null,
             designRevision: designRevision(emptyDesign),
             modelingIntent: 'How a URL shortener creates a short link',
             components: [],

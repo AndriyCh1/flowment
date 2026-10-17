@@ -1,6 +1,7 @@
 import {
   designRevision,
   type CoachTurn,
+  type Exercise,
   type SystemDesign,
 } from '@flowment/domain';
 import {
@@ -69,6 +70,7 @@ function source(
   return {
     projectId: 'project-1',
     mode: 'open-project',
+    exercise: null,
     modelingIntent: null,
     turns: [],
     design: emptyDesign,
@@ -93,12 +95,33 @@ describe('buildCoachContext', () => {
     expect(buildCoachContext(source())).toEqual({
       projectId: 'project-1',
       mode: 'open-project',
+      exercise: null,
       designRevision: designRevision(emptyDesign),
       modelingIntent: null,
       components: [],
       scenarios: [],
       assumptions: [],
       conversation: [],
+    });
+  });
+
+  it('carries the exercise title, mode and prompt', () => {
+    const exercise: Exercise = {
+      id: 'trace-upload',
+      title: 'Trace an upload',
+      difficulty: 1,
+      mode: 'trace',
+      prompt: 'Write the sequence for an upload.',
+      learningObjectives: [{ id: 'o1', description: 'Find the file' }],
+      startingDesign: design,
+    };
+
+    expect(
+      buildCoachContext(source({ mode: 'exercise', exercise })).exercise,
+    ).toEqual({
+      title: 'Trace an upload',
+      mode: 'trace',
+      prompt: 'Write the sequence for an upload.',
     });
   });
 

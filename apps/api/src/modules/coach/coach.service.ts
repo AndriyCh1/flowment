@@ -16,6 +16,7 @@ import {
   type CoachQuestion,
   type CoachQuestionPurpose,
   type CoachTurn,
+  type Exercise,
   type ExerciseObjective,
   type SystemDesign,
 } from '@flowment/domain';
@@ -28,6 +29,7 @@ import {
   coachSessions,
   type Db,
 } from '../../infrastructure/database';
+import { ExercisesService } from '../exercises';
 import { ProjectsService } from '../projects';
 import {
   COACH_AI_PROVIDER,
@@ -62,6 +64,11 @@ export const DISCOVERY_QUESTION =
 const MAX_REPLY_ATTEMPTS = 3;
 
 type CoachSessionRow = typeof coachSessions.$inferSelect;
+
+type CoachedProject = {
+  design: SystemDesign;
+  exercise: Exercise | null;
+};
 
 type CoachSessionChanges = Partial<
   Pick<
@@ -163,6 +170,7 @@ export class CoachService {
   constructor(
     @InjectDb() private readonly db: Db,
     private readonly projects: ProjectsService,
+    private readonly exercises: ExercisesService,
     @Inject(COACH_AI_PROVIDER) private readonly ai: CoachAiProvider,
   ) {}
 
@@ -200,13 +208,13 @@ export class CoachService {
     projectId: string,
     { scenarioId }: CoachNextInput,
   ): Promise<CoachSession> {
-    const project = await this.projects.get(projectId);
-    const design = SystemDesignSchema.parse(project.systemDesign);
+    const project = await this.loadProjectForCoaching(projectId);
+    const { design } = project;
     const row = await this.findOrCreateSessionRow(projectId);
 
     const output = await this.generateCoachOutput(
       row,
-      design,
+      project,
       scenarioId ?? null,
     );
     const turn: CoachTurn = {
@@ -232,8 +240,8 @@ export class CoachService {
     projectId: string,
     { questionId, scenarioId }: CoachHintRequestInput,
   ): Promise<CoachSession> {
-    const project = await this.projects.get(projectId);
-    const design = SystemDesignSchema.parse(project.systemDesign);
+    const project = await this.loadProjectForCoaching(projectId);
+    const { design } = project;
     const row = await this.findOrCreateSessionRow(projectId);
 
     const asked =
@@ -252,7 +260,7 @@ export class CoachService {
 
     const draft = await this.callProvider('give a hint', HintDraftSchema, () =>
       this.ai.generateHint({
-        context: this.buildContext(row, design, scenarioId ?? null),
+        context: this.buildContext(row, project, scenarioId ?? null),
         question: toProviderQuestion(asked, design),
         level,
         previousHints: hintsForQuestion(row.turns, questionId).map(
@@ -307,8 +315,8 @@ export class CoachService {
     projectId: string,
     { questionId, scenarioId }: CoachPossibleAnswerRequestInput,
   ): Promise<CoachSession> {
-    const project = await this.projects.get(projectId);
-    const design = SystemDesignSchema.parse(project.systemDesign);
+    const project = await this.loadProjectForCoaching(projectId);
+    const { design } = project;
     const row = await this.findOrCreateSessionRow(projectId);
 
     const asked =
@@ -337,7 +345,7 @@ export class CoachService {
       PossibleAnswerDraftSchema,
       () =>
         this.ai.generatePossibleAnswer({
-          context: this.buildContext(row, design, scenarioId ?? null),
+          context: this.buildContext(row, project, scenarioId ?? null),
           question: toProviderQuestion(asked, design),
           previousHints: hintsForQuestion(row.turns, questionId).map(
             ({ text }) => text,
@@ -474,14 +482,27 @@ export class CoachService {
     return updated;
   }
 
+  private async loadProjectForCoaching(
+    projectId: string,
+  ): Promise<CoachedProject> {
+    const project = await this.projects.get(projectId);
+    return {
+      design: SystemDesignSchema.parse(project.systemDesign),
+      exercise: project.exerciseId
+        ? (this.exercises.findExercise(project.exerciseId) ?? null)
+        : null,
+    };
+  }
+
   private buildContext(
     row: CoachSessionRow,
-    design: SystemDesign,
+    { design, exercise }: CoachedProject,
     selectedScenarioId: string | null,
   ): CoachContext {
     return buildCoachContext({
       projectId: row.projectId,
       mode: row.mode,
+      exercise: row.mode === 'exercise' ? exercise : null,
       modelingIntent: row.modelingIntent,
       turns: row.turns,
       design,
@@ -491,10 +512,11 @@ export class CoachService {
 
   private async generateCoachOutput(
     row: CoachSessionRow,
-    design: SystemDesign,
+    project: CoachedProject,
     selectedScenarioId: string | null,
   ): Promise<CoachOutput> {
-    const context = this.buildContext(row, design, selectedScenarioId);
+    const { design } = project;
+    const context = this.buildContext(row, project, selectedScenarioId);
 
     if (row.mode === 'exercise' && row.objectives.length > 0) {
       return this.coachTowardObjectives(row.objectives, context, design);

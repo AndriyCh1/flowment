@@ -2,7 +2,7 @@ import { ProjectNameSchema, SystemDesignSchema } from '@flowment/domain';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { PaginationQuerySchema, paginatedSchema } from '../../shared/http';
-import { isoDate } from '../../shared/zod/openapi-helpers';
+import { isoDate, nullableString } from '../../shared/zod/openapi-helpers';
 
 export const CreateProjectSchema = z.object({
   name: ProjectNameSchema,
@@ -28,6 +28,7 @@ export const ProjectSummarySchema = z.object({
 
 export const ProjectSchema = ProjectSummarySchema.extend({
   systemDesign: SystemDesignSchema,
+  exerciseId: nullableString(),
 });
 
 export const ProjectListSchema = paginatedSchema(ProjectSummarySchema);

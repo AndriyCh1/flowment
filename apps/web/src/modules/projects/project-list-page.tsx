@@ -16,7 +16,15 @@ const PAGE_SIZE = 20;
 export function ProjectListPage() {
   return (
     <Page>
-      <h1 className="text-2xl font-semibold">Projects</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-2xl font-semibold">Projects</h1>
+        <Link
+          to="/exercises"
+          className="text-sm font-medium text-zinc-700 hover:underline"
+        >
+          Practise with an exercise →
+        </Link>
+      </div>
       <CreateProjectForm />
       <ProjectList />
     </Page>

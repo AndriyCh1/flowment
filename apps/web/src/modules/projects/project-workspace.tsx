@@ -6,6 +6,7 @@ import { errorMessage } from '../../shared/api-error';
 import { ArchitectureView } from '../architecture';
 import { CoachPanel } from '../coach';
 import { ComponentPanel } from '../design-components';
+import { ExerciseBrief } from '../exercises';
 import { ScenarioWorkspace } from '../scenarios';
 import { formatTimestamp } from './format-timestamp';
 import { ProjectNameForm } from './project-name-form';
@@ -45,6 +46,11 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         </p>
         <p aria-live="polite">{saveDesign.isPending ? 'Saving…' : ''}</p>
       </div>
+      {project.exerciseId && (
+        <div className="mt-4">
+          <ExerciseBrief exerciseId={project.exerciseId} />
+        </div>
+      )}
       {rejectedChange && (
         <div className="mt-3">
           <ErrorMessage>

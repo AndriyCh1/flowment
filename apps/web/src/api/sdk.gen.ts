@@ -15,6 +15,9 @@ import type {
   GetCoachSessionData,
   GetCoachSessionErrors,
   GetCoachSessionResponses,
+  GetExerciseData,
+  GetExerciseErrors,
+  GetExerciseResponses,
   GetProjectData,
   GetProjectErrors,
   GetProjectResponses,
@@ -23,6 +26,8 @@ import type {
   HealthControllerReadyData,
   HealthControllerReadyErrors,
   HealthControllerReadyResponses,
+  ListExercisesData,
+  ListExercisesResponses,
   ListProjectsData,
   ListProjectsErrors,
   ListProjectsResponses,
@@ -41,6 +46,9 @@ import type {
   ResetCoachSessionData,
   ResetCoachSessionErrors,
   ResetCoachSessionResponses,
+  StartExerciseData,
+  StartExerciseErrors,
+  StartExerciseResponses,
   UpdateModelingIntentData,
   UpdateModelingIntentErrors,
   UpdateModelingIntentResponses,
@@ -138,6 +146,33 @@ export const updateProject = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
+
+export const listExercises = <ThrowOnError extends boolean = false>(
+  options?: Options<ListExercisesData, ThrowOnError>,
+): RequestResult<ListExercisesResponses, unknown, ThrowOnError> =>
+  (options?.client ?? client).get<
+    ListExercisesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: '/api/exercises', ...options });
+
+export const getExercise = <ThrowOnError extends boolean = false>(
+  options: Options<GetExerciseData, ThrowOnError>,
+): RequestResult<GetExerciseResponses, GetExerciseErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    GetExerciseResponses,
+    GetExerciseErrors,
+    ThrowOnError
+  >({ url: '/api/exercises/{exerciseId}', ...options });
+
+export const startExercise = <ThrowOnError extends boolean = false>(
+  options: Options<StartExerciseData, ThrowOnError>,
+): RequestResult<StartExerciseResponses, StartExerciseErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    StartExerciseResponses,
+    StartExerciseErrors,
+    ThrowOnError
+  >({ url: '/api/exercises/{exerciseId}/start', ...options });
 
 export const getCoachSession = <ThrowOnError extends boolean = false>(
   options: Options<GetCoachSessionData, ThrowOnError>,

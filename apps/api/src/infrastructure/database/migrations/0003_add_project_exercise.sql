@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "exercise_id" text;

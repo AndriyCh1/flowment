@@ -6,6 +6,7 @@ export const projects = pgTable('projects', {
   id: uuid().primaryKey().defaultRandom(),
   name: text().notNull(),
   systemDesign: jsonb().$type<SystemDesign>().notNull(),
+  exerciseId: text(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true })
     .notNull()

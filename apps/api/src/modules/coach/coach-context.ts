@@ -8,6 +8,7 @@ import {
   type CoachTurn,
   type Component,
   type ComponentKind,
+  type Exercise,
   type HintLevel,
   type HintOutcome,
   type LearnerReplyKind,
@@ -15,6 +16,7 @@ import {
   type SequenceStep,
   type SuggestedInteraction,
   type SystemDesign,
+  type TrainingMode,
 } from '@flowment/domain';
 
 export const MAX_CONTEXT_TURNS = 40;
@@ -83,9 +85,16 @@ export type ContextTurn =
     }
   | { role: 'learner'; kind: LearnerReplyKind; text: string };
 
+export type ContextExercise = {
+  title: string;
+  mode: TrainingMode;
+  prompt: string;
+};
+
 export type CoachContext = {
   projectId: string;
   mode: CoachMode;
+  exercise: ContextExercise | null;
   designRevision: string;
   modelingIntent: string | null;
   components: ContextComponent[];
@@ -97,6 +106,7 @@ export type CoachContext = {
 export type CoachContextSource = {
   projectId: string;
   mode: CoachMode;
+  exercise: Exercise | null;
   modelingIntent: string | null;
   turns: readonly CoachTurn[];
   design: SystemDesign;
@@ -201,6 +211,7 @@ function contextTurn(turn: CoachTurn): ContextTurn {
 export function buildCoachContext({
   projectId,
   mode,
+  exercise,
   modelingIntent,
   turns,
   design,
@@ -216,6 +227,9 @@ export function buildCoachContext({
   return {
     projectId,
     mode,
+    exercise: exercise
+      ? { title: exercise.title, mode: exercise.mode, prompt: exercise.prompt }
+      : null,
     designRevision: designRevision(design),
     modelingIntent: modelingIntent?.trim() || null,
     components: design.components.map(contextComponent),

@@ -115,6 +115,7 @@ export type ProjectDto = {
       evidence?: string;
     }>;
   };
+  exerciseId: string | null;
 };
 
 export type ErrorResponseDto = {
@@ -182,6 +183,32 @@ export type UpdateProjectDto = {
       evidence?: string;
     }>;
   };
+};
+
+export type ExerciseListDto = {
+  items: Array<{
+    id: string;
+    title: string;
+    difficulty: number;
+    mode: 'trace' | 'complete' | 'repair';
+    prompt: string;
+    learningObjectives: Array<{
+      id: string;
+      description: string;
+    }>;
+  }>;
+};
+
+export type ExerciseDto = {
+  id: string;
+  title: string;
+  difficulty: number;
+  mode: 'trace' | 'complete' | 'repair';
+  prompt: string;
+  learningObjectives: Array<{
+    id: string;
+    description: string;
+  }>;
 };
 
 export type CoachSessionDto = {
@@ -408,6 +435,64 @@ export type UpdateProjectResponses = {
 
 export type UpdateProjectResponse =
   UpdateProjectResponses[keyof UpdateProjectResponses];
+
+export type ListExercisesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/exercises';
+};
+
+export type ListExercisesResponses = {
+  default: ExerciseListDto;
+};
+
+export type ListExercisesResponse =
+  ListExercisesResponses[keyof ListExercisesResponses];
+
+export type GetExerciseData = {
+  body?: never;
+  path: {
+    exerciseId: string;
+  };
+  query?: never;
+  url: '/api/exercises/{exerciseId}';
+};
+
+export type GetExerciseErrors = {
+  404: ErrorResponseDto;
+};
+
+export type GetExerciseError = GetExerciseErrors[keyof GetExerciseErrors];
+
+export type GetExerciseResponses = {
+  default: ExerciseDto;
+};
+
+export type GetExerciseResponse =
+  GetExerciseResponses[keyof GetExerciseResponses];
+
+export type StartExerciseData = {
+  body?: never;
+  path: {
+    exerciseId: string;
+  };
+  query?: never;
+  url: '/api/exercises/{exerciseId}/start';
+};
+
+export type StartExerciseErrors = {
+  404: ErrorResponseDto;
+};
+
+export type StartExerciseError = StartExerciseErrors[keyof StartExerciseErrors];
+
+export type StartExerciseResponses = {
+  201: ProjectDto;
+};
+
+export type StartExerciseResponse =
+  StartExerciseResponses[keyof StartExerciseResponses];
 
 export type GetCoachSessionData = {
   body?: never;

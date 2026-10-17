@@ -18,6 +18,7 @@ type RecordedRequest = Omit<GenerateObjectRequest<never>, 'schema'>;
 const context: CoachContext = {
   projectId: 'project-1',
   mode: 'open-project',
+  exercise: null,
   designRevision: 'abc12345',
   modelingIntent: 'A notification system',
   components: [],

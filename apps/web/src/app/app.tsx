@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ExerciseListPage } from '../modules/exercises';
 import { ProjectListPage, ProjectPage } from '../modules/projects';
 
 export function AppRoutes() {
@@ -7,6 +8,7 @@ export function AppRoutes() {
       <Route path="/" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<ProjectListPage />} />
       <Route path="/projects/:projectId" element={<ProjectPage />} />
+      <Route path="/exercises" element={<ExerciseListPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
