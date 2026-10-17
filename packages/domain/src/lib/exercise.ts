@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ExerciseObjectiveSchema } from './coach.js';
+import { ExerciseObjectiveSchema, type ExerciseObjective } from './coach.js';
 import { IdSchema } from './id.js';
 import { SystemDesignSchema } from './system-design.js';
 import { reportDuplicateIds } from './validation.js';
@@ -18,6 +18,12 @@ export const ExerciseDifficultySchema = z
 
 export type ExerciseDifficulty = z.infer<typeof ExerciseDifficultySchema>;
 
+export const TRACE_EXPLICITNESS_OBJECTIVE: ExerciseObjective = {
+  id: 'explicit-sequence',
+  description:
+    'The sequence is explicit: each interaction says what is sent or asked for, and each component acts only on information it already holds or received in an earlier step.',
+};
+
 export const ExerciseSchema = z
   .object({
     id: IdSchema,
@@ -35,6 +41,26 @@ export const ExerciseSchema = z
       'objective',
       ctx,
     );
+
+    if (exercise.mode === 'trace') {
+      exercise.learningObjectives.forEach(({ id }, index) => {
+        if (id === TRACE_EXPLICITNESS_OBJECTIVE.id) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `Objective id "${id}" is reserved in trace exercises`,
+            path: ['learningObjectives', index, 'id'],
+          });
+        }
+      });
+    }
   });
 
 export type Exercise = z.infer<typeof ExerciseSchema>;
+
+export function exerciseObjectives(
+  exercise: Pick<Exercise, 'mode' | 'learningObjectives'>,
+): ExerciseObjective[] {
+  return exercise.mode === 'trace'
+    ? [TRACE_EXPLICITNESS_OBJECTIVE, ...exercise.learningObjectives]
+    : [...exercise.learningObjectives];
+}

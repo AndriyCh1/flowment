@@ -7,6 +7,7 @@ import {
   designStepIds,
   findCoachQuestion,
   findLatestPossibleAnswer,
+  findUnlabeledInteractions,
   hintsForQuestion,
   initialCoachStage,
   isPossibleAnswerAvailable,
@@ -57,6 +58,7 @@ import {
   CoachSessionChangedError,
   CoachUnavailableError,
 } from './coach.errors';
+import { unlabeledInteractionQuestion } from './explicitness-question';
 
 export const DISCOVERY_QUESTION =
   'What system or behavior do you want to explore?';
@@ -517,6 +519,18 @@ export class CoachService {
   ): Promise<CoachOutput> {
     const { design } = project;
     const context = this.buildContext(row, project, selectedScenarioId);
+
+    if (context.exercise?.mode === 'trace') {
+      const [unlabeled] = findUnlabeledInteractions(design);
+      if (unlabeled) {
+        return createQuestion(
+          'review',
+          unlabeledInteractionQuestion(design, unlabeled),
+          design,
+          [unlabeled.step.id],
+        );
+      }
+    }
 
     if (row.mode === 'exercise' && row.objectives.length > 0) {
       return this.coachTowardObjectives(row.objectives, context, design);

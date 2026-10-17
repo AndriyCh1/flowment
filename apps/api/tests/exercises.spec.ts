@@ -1,4 +1,8 @@
-import type { SystemDesign } from '@flowment/domain';
+import {
+  TRACE_EXPLICITNESS_OBJECTIVE,
+  exerciseObjectives,
+  type SystemDesign,
+} from '@flowment/domain';
 import { coachSessions, projects } from '../src/infrastructure/database';
 import { COACH_AI_PROVIDER, type CoachSession } from '../src/modules/coach';
 import {
@@ -117,7 +121,7 @@ describe('Exercises API', () => {
     });
 
     it('starts an exercise coach session with the learning objectives', async () => {
-      const { body: project } = await startExercise(traceExercise.id);
+      const { body: project } = await startExercise(completeExercise.id);
 
       const { body } = await api.request<CoachSession>(
         'GET',
@@ -129,7 +133,7 @@ describe('Exercises API', () => {
         mode: 'exercise',
         modelingIntent: null,
         stage: 'guiding',
-        objectives: traceExercise.learningObjectives,
+        objectives: completeExercise.learningObjectives,
         turns: [],
         activeQuestionId: null,
         designRevision: null,
@@ -177,7 +181,7 @@ describe('Exercises API', () => {
     it('gives the coach the exercise title, mode and prompt', async () => {
       const { body: project } = await startExercise(traceExercise.id);
       ai.willEvaluate(
-        ...traceExercise.learningObjectives.map(() => ({
+        ...exerciseObjectives(traceExercise).map(() => ({
           status: 'satisfied',
           evidence: [],
           summary: 'Done.',
@@ -192,7 +196,7 @@ describe('Exercises API', () => {
 
       expect(status).toBe(200);
       expect(ai.evaluationInputs.map(({ objective }) => objective)).toEqual(
-        traceExercise.learningObjectives,
+        exerciseObjectives(traceExercise),
       );
       expect(ai.evaluationInputs[0].context.exercise).toEqual({
         title: traceExercise.title,
@@ -213,6 +217,139 @@ describe('Exercises API', () => {
 
       expect(project.exerciseId).toBeNull();
       expect(ai.questionInputs[0].context.exercise).toBeNull();
+    });
+  });
+
+  describe('trace exercises', () => {
+    type Step = SystemDesign['scenarios'][number]['steps'][number];
+
+    const withSteps = (design: SystemDesign, steps: Step[]): SystemDesign => ({
+      ...design,
+      scenarios: design.scenarios.map((scenario, index) =>
+        index === 0 ? { ...scenario, steps } : scenario,
+      ),
+    });
+
+    const startWithSteps = async (
+      exercise: (typeof EXERCISE_CATALOG)[number],
+      steps: Step[],
+    ) => {
+      const { body: project } = await startExercise(exercise.id);
+      await api.request('PATCH', `/api/projects/${project.id}`, {
+        systemDesign: withSteps(exercise.startingDesign, steps),
+      });
+      return project;
+    };
+
+    const next = (projectId: string) =>
+      api.request<CoachSession>(
+        'POST',
+        `/api/projects/${projectId}/coach/next`,
+        {},
+      );
+
+    const satisfied = {
+      status: 'satisfied',
+      evidence: [],
+      summary: 'Done.',
+    };
+
+    it('checks explicitness before the learning objectives', async () => {
+      const { body: project } = await startExercise(traceExercise.id);
+
+      const { body } = await api.request<CoachSession>(
+        'GET',
+        `/api/projects/${project.id}/coach`,
+      );
+
+      expect(body.objectives).toEqual([
+        TRACE_EXPLICITNESS_OBJECTIVE,
+        ...traceExercise.learningObjectives,
+      ]);
+    });
+
+    it('asks about an interaction that says nothing, without calling the AI', async () => {
+      const project = await startWithSteps(traceExercise, [
+        {
+          id: 's1',
+          type: 'interaction',
+          from: 'client',
+          to: 'api',
+          text: 'Upload CSV',
+        },
+        { id: 's2', type: 'note', text: '' },
+        { id: 's3', type: 'interaction', from: 'api', to: 'job-db', text: ' ' },
+      ]);
+
+      const { status, body } = await next(project.id);
+
+      expect(status).toBe(200);
+      expect(body.stage).toBe('reviewing');
+      expect(body.turns.at(-1)).toMatchObject({
+        role: 'coach',
+        output: {
+          type: 'question',
+          questionId: body.activeQuestionId,
+          purpose: 'review',
+          text: "Step 3, API → Job DB, doesn't say what is sent. What does API send to Job DB there?",
+          relatedStepIds: ['s3'],
+        },
+      });
+      expect(ai.evaluationInputs).toHaveLength(0);
+      expect(ai.questionInputs).toHaveLength(0);
+    });
+
+    it('asks what a component does in an unlabeled self-interaction', async () => {
+      const project = await startWithSteps(traceExercise, [
+        { id: 's1', type: 'interaction', from: 'worker', to: 'worker', text: '' },
+      ]);
+
+      const { body } = await next(project.id);
+
+      expect(body.turns.at(-1)).toMatchObject({
+        output: {
+          text: "Step 1 doesn't say what Worker does. What does Worker do there?",
+          relatedStepIds: ['s1'],
+        },
+      });
+    });
+
+    it('evaluates the objectives once every interaction says something', async () => {
+      const project = await startWithSteps(traceExercise, [
+        {
+          id: 's1',
+          type: 'interaction',
+          from: 'client',
+          to: 'api',
+          text: 'Upload CSV',
+        },
+      ]);
+      ai.willEvaluate(
+        ...exerciseObjectives(traceExercise).map(() => satisfied),
+      );
+
+      const { body } = await next(project.id);
+
+      expect(body.stage).toBe('objective-reached');
+      expect(ai.evaluationInputs[0].objective).toEqual(
+        TRACE_EXPLICITNESS_OBJECTIVE,
+      );
+    });
+
+    it('leaves unlabeled interactions to the evaluator outside trace exercises', async () => {
+      const project = await startWithSteps(completeExercise, [
+        { id: 's1', type: 'interaction', from: 'api', to: 'queue', text: '' },
+      ]);
+      ai.willEvaluate(
+        ...completeExercise.learningObjectives.map(() => satisfied),
+      );
+
+      const { body } = await next(project.id);
+
+      expect(body.stage).toBe('objective-reached');
+      expect(ai.evaluationInputs.map(({ objective }) => objective)).toEqual(
+        completeExercise.learningObjectives,
+      );
     });
   });
 });

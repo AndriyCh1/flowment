@@ -113,7 +113,7 @@ export type CoachContextSource = {
   selectedScenarioId: string | null;
 };
 
-function componentName(component: Component): string {
+export function componentName(component: Component): string {
   return component.name.trim() || UNNAMED_COMPONENT;
 }
 

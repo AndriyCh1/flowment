@@ -135,6 +135,8 @@ Choose one status:
 - "unsatisfied": the objective is not demonstrated yet. Name the single most important concrete "gap" and give the "evidence" for it.
 - "indeterminate": information needed to judge is missing. Say what is missing in "reason".
 
+There is no reference sequence to match. Any sequence that demonstrates the objective counts, whatever its wording, the order of unrelated steps, or extra steps the objective does not ask about. Judge what the steps say, not how closely they match an expected answer.
+
 Judge only against the objective. Ignore unrelated production concerns. Cite only steps, components and statements that are in the input, and never fabricate evidence.
 
 Output fields: "status"; "evidence" (an empty array when indeterminate); "summary" (null unless satisfied); "gap" (null unless unsatisfied); "reason" (null unless indeterminate).`;

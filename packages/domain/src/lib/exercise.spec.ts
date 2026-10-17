@@ -1,4 +1,9 @@
-import { ExerciseSchema, type Exercise } from './exercise.js';
+import {
+  ExerciseSchema,
+  TRACE_EXPLICITNESS_OBJECTIVE,
+  exerciseObjectives,
+  type Exercise,
+} from './exercise.js';
 
 const exercise: Exercise = {
   id: 'trace-upload',
@@ -109,4 +114,50 @@ describe('ExerciseSchema', () => {
       false,
     );
   });
+});
+
+describe('trace explicitness objective', () => {
+  it('rejects a trace objective that uses the reserved id', () => {
+    const result = ExerciseSchema.safeParse({
+      ...exercise,
+      learningObjectives: [
+        { id: TRACE_EXPLICITNESS_OBJECTIVE.id, description: 'Mine' },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({ path: ['learningObjectives', 0, 'id'] }),
+    ]);
+  });
+
+  it('allows the id outside trace exercises', () => {
+    expect(
+      ExerciseSchema.safeParse({
+        ...exercise,
+        mode: 'repair',
+        learningObjectives: [
+          { id: TRACE_EXPLICITNESS_OBJECTIVE.id, description: 'Mine' },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('exerciseObjectives', () => {
+  it('puts the explicitness objective first in a trace exercise', () => {
+    expect(exerciseObjectives(exercise)).toEqual([
+      TRACE_EXPLICITNESS_OBJECTIVE,
+      ...exercise.learningObjectives,
+    ]);
+  });
+
+  it.each(['complete', 'repair'] as const)(
+    'uses only the learning objectives in a %s exercise',
+    (mode) => {
+      expect(exerciseObjectives({ ...exercise, mode })).toEqual(
+        exercise.learningObjectives,
+      );
+    },
+  );
 });

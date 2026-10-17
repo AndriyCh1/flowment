@@ -1,4 +1,8 @@
-import { initialCoachStage, type Exercise } from '@flowment/domain';
+import {
+  exerciseObjectives,
+  initialCoachStage,
+  type Exercise,
+} from '@flowment/domain';
 import { Injectable } from '@nestjs/common';
 import {
   InjectDb,
@@ -55,7 +59,7 @@ export class ExercisesService {
         projectId: project.id,
         mode: 'exercise',
         stage: initialCoachStage('exercise'),
-        objectives: exercise.learningObjectives,
+        objectives: exerciseObjectives(exercise),
       });
 
       return project;
