@@ -7,11 +7,15 @@ export {
   type HintDraft,
   type HintInput,
   type ObjectiveEvaluationInput,
+  type PossibleAnswerDraft,
+  type PossibleAnswerInput,
+  type ProviderQuestion,
 } from './coach-ai-provider';
 export type { CoachContext } from './coach-context';
 export type { CoachSession } from './coach.dto';
 export {
   CoachHintsExhaustedError,
+  CoachPossibleAnswerNotAvailableError,
   CoachQuestionNotActiveError,
   CoachSessionChangedError,
   CoachUnavailableError,

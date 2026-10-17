@@ -13,6 +13,7 @@ import {
   type LearnerReplyKind,
   type SequenceScenario,
   type SequenceStep,
+  type SuggestedInteraction,
   type SystemDesign,
 } from '@flowment/domain';
 
@@ -72,6 +73,13 @@ export type ContextTurn =
       level: HintLevel;
       outcome: HintOutcome;
       text: string;
+    }
+  | {
+      role: 'coach';
+      kind: 'possible-answer';
+      approach: string;
+      rationale: string;
+      suggestedInteractions: SuggestedInteraction[];
     }
   | { role: 'learner'; kind: LearnerReplyKind; text: string };
 
@@ -159,6 +167,17 @@ function contextTurn(turn: CoachTurn): ContextTurn {
   if (turn.role === 'hint') {
     const { level, outcome, text } = turn;
     return { role: 'coach', kind: 'hint', level, outcome, text };
+  }
+
+  if (turn.role === 'possible-answer') {
+    const { approach, rationale, suggestedInteractions } = turn;
+    return {
+      role: 'coach',
+      kind: 'possible-answer',
+      approach,
+      rationale,
+      suggestedInteractions,
+    };
   }
 
   const { output } = turn;

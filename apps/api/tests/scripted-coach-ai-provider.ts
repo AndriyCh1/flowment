@@ -6,6 +6,8 @@ import type {
   HintDraft,
   HintInput,
   ObjectiveEvaluationInput,
+  PossibleAnswerDraft,
+  PossibleAnswerInput,
 } from '../src/modules/coach';
 
 type Scripted = unknown | (() => unknown);
@@ -24,9 +26,11 @@ async function play(queue: Scripted[], method: string): Promise<unknown> {
 export class ScriptedCoachAiProvider implements CoachAiProvider {
   readonly questionInputs: CoachInput[] = [];
   readonly hintInputs: HintInput[] = [];
+  readonly possibleAnswerInputs: PossibleAnswerInput[] = [];
   readonly evaluationInputs: ObjectiveEvaluationInput[] = [];
   private readonly questions: Scripted[] = [];
   private readonly hints: Scripted[] = [];
+  private readonly possibleAnswers: Scripted[] = [];
   private readonly evaluations: Scripted[] = [];
 
   willRespond(...responses: Scripted[]): void {
@@ -37,6 +41,10 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
     this.hints.push(...responses);
   }
 
+  willAnswer(...responses: Scripted[]): void {
+    this.possibleAnswers.push(...responses);
+  }
+
   willEvaluate(...responses: Scripted[]): void {
     this.evaluations.push(...responses);
   }
@@ -44,9 +52,11 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
   reset(): void {
     this.questionInputs.length = 0;
     this.hintInputs.length = 0;
+    this.possibleAnswerInputs.length = 0;
     this.evaluationInputs.length = 0;
     this.questions.length = 0;
     this.hints.length = 0;
+    this.possibleAnswers.length = 0;
     this.evaluations.length = 0;
   }
 
@@ -58,6 +68,16 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
   async generateHint(input: HintInput): Promise<HintDraft> {
     this.hintInputs.push(structuredClone(input));
     return (await play(this.hints, 'generateHint')) as HintDraft;
+  }
+
+  async generatePossibleAnswer(
+    input: PossibleAnswerInput,
+  ): Promise<PossibleAnswerDraft> {
+    this.possibleAnswerInputs.push(structuredClone(input));
+    return (await play(
+      this.possibleAnswers,
+      'generatePossibleAnswer',
+    )) as PossibleAnswerDraft;
   }
 
   async evaluateObjective(

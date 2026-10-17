@@ -6,8 +6,10 @@ import {
   designRevision,
   designStepIds,
   findCoachQuestion,
+  findLatestPossibleAnswer,
   hintsForQuestion,
   initialCoachStage,
+  isPossibleAnswerAvailable,
   knownStepIds,
   nextHintLevel,
   type CoachOutput,
@@ -32,19 +34,23 @@ import {
   CoachDraftSchema,
   CoachQuestionDraftSchema,
   HintDraftSchema,
+  PossibleAnswerDraftSchema,
   type CoachAiProvider,
   type CoachDraft,
   type CoachFocus,
+  type ProviderQuestion,
 } from './coach-ai-provider';
 import { buildCoachContext, type CoachContext } from './coach-context';
 import type {
   CoachHintRequestInput,
   CoachNextInput,
+  CoachPossibleAnswerRequestInput,
   CoachReplyInput,
   CoachSession,
 } from './coach.dto';
 import {
   CoachHintsExhaustedError,
+  CoachPossibleAnswerNotAvailableError,
   CoachQuestionNotActiveError,
   CoachSessionChangedError,
   CoachUnavailableError,
@@ -115,6 +121,18 @@ function createQuestion(
     questionId: randomUUID(),
     purpose,
     text,
+    ...(relatedStepIds.length > 0 ? { relatedStepIds } : {}),
+  };
+}
+
+function toProviderQuestion(
+  question: CoachQuestion,
+  design: SystemDesign,
+): ProviderQuestion {
+  const relatedStepIds = knownStepIds(design, question.relatedStepIds ?? []);
+  return {
+    purpose: question.purpose,
+    text: question.text,
     ...(relatedStepIds.length > 0 ? { relatedStepIds } : {}),
   };
 }
@@ -232,15 +250,10 @@ export class CoachService {
       throw new CoachHintsExhaustedError();
     }
 
-    const relatedStepIds = knownStepIds(design, asked.relatedStepIds ?? []);
     const draft = await this.callProvider('give a hint', HintDraftSchema, () =>
       this.ai.generateHint({
         context: this.buildContext(row, design, scenarioId ?? null),
-        question: {
-          purpose: asked.purpose,
-          text: asked.text,
-          ...(relatedStepIds.length > 0 ? { relatedStepIds } : {}),
-        },
+        question: toProviderQuestion(asked, design),
         level,
         previousHints: hintsForQuestion(row.turns, questionId).map(
           ({ text }) => text,
@@ -281,6 +294,69 @@ export class CoachService {
         });
       }
       return saved;
+    });
+
+    if (!updated) {
+      throw new CoachSessionChangedError();
+    }
+
+    return toSession(updated);
+  }
+
+  async requestPossibleAnswer(
+    projectId: string,
+    { questionId, scenarioId }: CoachPossibleAnswerRequestInput,
+  ): Promise<CoachSession> {
+    const project = await this.projects.get(projectId);
+    const design = SystemDesignSchema.parse(project.systemDesign);
+    const row = await this.findOrCreateSessionRow(projectId);
+
+    const asked =
+      row.activeQuestionId === questionId
+        ? findCoachQuestion(row.turns, questionId)
+        : undefined;
+
+    if (!asked) {
+      throw new CoachQuestionNotActiveError();
+    }
+
+    if (!isPossibleAnswerAvailable(row.turns, questionId)) {
+      throw new CoachPossibleAnswerNotAvailableError();
+    }
+
+    const revision = designRevision(design);
+    if (
+      findLatestPossibleAnswer(row.turns, questionId)?.designRevision ===
+      revision
+    ) {
+      return toSession(row);
+    }
+
+    const draft = await this.callProvider(
+      'show a possible answer',
+      PossibleAnswerDraftSchema,
+      () =>
+        this.ai.generatePossibleAnswer({
+          context: this.buildContext(row, design, scenarioId ?? null),
+          question: toProviderQuestion(asked, design),
+          previousHints: hintsForQuestion(row.turns, questionId).map(
+            ({ text }) => text,
+          ),
+          objectives: row.mode === 'exercise' ? row.objectives : [],
+        }),
+    );
+
+    const turn: CoachTurn = {
+      id: randomUUID(),
+      role: 'possible-answer',
+      createdAt: new Date().toISOString(),
+      questionId,
+      designRevision: revision,
+      ...draft,
+    };
+
+    const updated = await this.updateSessionIfUnchanged(row, {
+      turns: [...row.turns, turn],
     });
 
     if (!updated) {

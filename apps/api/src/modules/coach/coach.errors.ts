@@ -16,6 +16,14 @@ export class CoachHintsExhaustedError extends ApplicationError {
   }
 }
 
+export class CoachPossibleAnswerNotAvailableError extends ApplicationError {
+  readonly code = ErrorCode.CONFLICT;
+
+  constructor() {
+    super('A possible answer is available only after the third hint');
+  }
+}
+
 export class CoachSessionChangedError extends ApplicationError {
   readonly code = ErrorCode.CONFLICT;
 

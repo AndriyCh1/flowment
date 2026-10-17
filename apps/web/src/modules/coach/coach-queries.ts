@@ -4,10 +4,12 @@ import {
   replyToCoach,
   requestCoachHint,
   requestCoachResponse,
+  requestPossibleAnswer,
   resetCoachSession,
   updateModelingIntent,
   type CoachHintRequestDto,
   type CoachNextDto,
+  type CoachPossibleAnswerRequestDto,
   type CoachReplyDto,
   type CoachSessionDto,
 } from '../../api';
@@ -80,6 +82,20 @@ export function useRequestCoachHint(projectId: string) {
     });
     return data;
   });
+}
+
+export function useRequestPossibleAnswer(projectId: string) {
+  return useCoachMutation(
+    projectId,
+    async (body: CoachPossibleAnswerRequestDto) => {
+      const { data } = await requestPossibleAnswer({
+        path: { projectId },
+        body,
+        throwOnError: true,
+      });
+      return data;
+    },
+  );
 }
 
 export function useReplyToCoach(projectId: string) {

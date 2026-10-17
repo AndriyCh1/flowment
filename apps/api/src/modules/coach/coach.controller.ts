@@ -21,6 +21,7 @@ import { ErrorResponseDto } from '../../shared/http';
 import {
   CoachHintRequestDto,
   CoachNextDto,
+  CoachPossibleAnswerRequestDto,
   CoachReplyDto,
   CoachSessionDto,
   UpdateModelingIntentDto,
@@ -79,6 +80,20 @@ export class CoachController {
     @Body() body: CoachHintRequestDto,
   ) {
     return this.coach.requestHint(projectId, body);
+  }
+
+  @Post('possible-answer')
+  @ApiOperation({ operationId: 'requestPossibleAnswer' })
+  @ZodResponse({ status: HttpStatus.OK, type: CoachSessionDto })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiServiceUnavailableResponse({ type: ErrorResponseDto })
+  requestPossibleAnswer(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() body: CoachPossibleAnswerRequestDto,
+  ) {
+    return this.coach.requestPossibleAnswer(projectId, body);
   }
 
   @Post('reply')

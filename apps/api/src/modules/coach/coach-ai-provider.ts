@@ -34,9 +34,22 @@ export const HintDraftSchema = z.object({
   text: z.string().trim().min(1),
 });
 
+export const PossibleAnswerDraftSchema = z.object({
+  approach: z.string().trim().min(1),
+  rationale: z.string().trim().min(1),
+  suggestedInteractions: z.array(
+    z.object({
+      from: z.string().trim().min(1),
+      to: z.string().trim().min(1),
+      text: z.string().trim(),
+    }),
+  ),
+});
+
 export type CoachQuestionDraft = z.infer<typeof CoachQuestionDraftSchema>;
 export type CoachDraft = z.infer<typeof CoachDraftSchema>;
 export type HintDraft = z.infer<typeof HintDraftSchema>;
+export type PossibleAnswerDraft = z.infer<typeof PossibleAnswerDraftSchema>;
 
 export type CoachFocus =
   | { kind: 'open' }
@@ -55,10 +68,22 @@ export type ObjectiveEvaluationInput = {
   objective: ExerciseObjective;
 };
 
+export type ProviderQuestion = Pick<
+  CoachQuestion,
+  'purpose' | 'text' | 'relatedStepIds'
+>;
+
 export type HintInput = {
   context: CoachContext;
-  question: Pick<CoachQuestion, 'purpose' | 'text' | 'relatedStepIds'>;
+  question: ProviderQuestion;
   level: HintLevel;
+  previousHints: string[];
+  objectives: ExerciseObjective[];
+};
+
+export type PossibleAnswerInput = {
+  context: CoachContext;
+  question: ProviderQuestion;
   previousHints: string[];
   objectives: ExerciseObjective[];
 };
@@ -66,6 +91,9 @@ export type HintInput = {
 export interface CoachAiProvider {
   generateCoachQuestion(input: CoachInput): Promise<CoachDraft>;
   generateHint(input: HintInput): Promise<HintDraft>;
+  generatePossibleAnswer(
+    input: PossibleAnswerInput,
+  ): Promise<PossibleAnswerDraft>;
   evaluateObjective(
     input: ObjectiveEvaluationInput,
   ): Promise<ObjectiveEvaluation>;

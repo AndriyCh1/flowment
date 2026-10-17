@@ -8,8 +8,10 @@ import {
   coachStageAfter,
   designStepIds,
   findCoachQuestion,
+  findLatestPossibleAnswer,
   maxHintsForPurpose,
   initialCoachStage,
+  isPossibleAnswerAvailable,
   knownStepIds,
   nextHintLevel,
   hintsForQuestion,
@@ -17,6 +19,7 @@ import {
   type CoachQuestion,
   type CoachTurn,
   type HintTurn,
+  type PossibleAnswerTurn,
 } from './coach.js';
 import type { SystemDesign } from './system-design.js';
 
@@ -319,19 +322,12 @@ describe('findCoachQuestion', () => {
   });
 });
 
-describe('hints', () => {
-  const reviewQuestion: CoachQuestion = {
-    type: 'question',
-    questionId: 'q2',
-    purpose: 'review',
-    text: 'Where does the Worker get the file key?',
-  };
-
-  const hint = (
-    questionId: string,
-    level: number,
-    outcome: HintTurn['outcome'] = 'hint',
-  ): HintTurn => ({
+function hint(
+  questionId: string,
+  level: number,
+  outcome: HintTurn['outcome'] = 'hint',
+): HintTurn {
+  return {
     id: `${questionId}-hint-${level}`,
     role: 'hint',
     createdAt: '2026-10-11T10:03:00.000Z',
@@ -339,7 +335,16 @@ describe('hints', () => {
     level,
     outcome,
     text: `Hint ${level}`,
-  });
+  };
+}
+
+describe('hints', () => {
+  const reviewQuestion: CoachQuestion = {
+    type: 'question',
+    questionId: 'q2',
+    purpose: 'review',
+    text: 'Where does the Worker get the file key?',
+  };
 
   it('allows three hints for guidance and review questions', () => {
     expect(maxHintsForPurpose('guide')).toBe(3);
@@ -385,6 +390,85 @@ describe('hints', () => {
     expect(
       nextHintLevel([hint('q2', 1, 'resolved')], reviewQuestion),
     ).toBeNull();
+  });
+});
+
+describe('possible answers', () => {
+  const possibleAnswer = (
+    questionId: string,
+    revision: string,
+  ): PossibleAnswerTurn => ({
+    id: `${questionId}-answer-${revision}`,
+    role: 'possible-answer',
+    createdAt: '2026-10-11T10:04:00.000Z',
+    questionId,
+    designRevision: revision,
+    approach: 'Load the job before reading storage.',
+    rationale: 'The job record holds the file key.',
+    suggestedInteractions: [
+      { from: 'Worker', to: 'Job DB', text: 'Load job(jobId)' },
+    ],
+  });
+
+  it('accepts a possible answer turn', () => {
+    const turn = possibleAnswer('q2', 'rev1');
+
+    expect(CoachTurnSchema.parse(turn)).toEqual(turn);
+  });
+
+  it('rejects a suggested interaction without a sender', () => {
+    expect(
+      CoachTurnSchema.safeParse({
+        ...possibleAnswer('q2', 'rev1'),
+        suggestedInteractions: [{ from: '', to: 'Job DB', text: 'Load' }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('is available once the third hint was given', () => {
+    const turns: CoachTurn[] = [hint('q2', 1), hint('q2', 2), hint('q2', 3)];
+
+    expect(isPossibleAnswerAvailable(turns, 'q2')).toBe(true);
+  });
+
+  it('is not available before the third hint', () => {
+    expect(isPossibleAnswerAvailable([], 'q2')).toBe(false);
+    expect(
+      isPossibleAnswerAvailable([hint('q2', 1), hint('q2', 2)], 'q2'),
+    ).toBe(false);
+  });
+
+  it('is not available after the only hint of a clarification', () => {
+    expect(isPossibleAnswerAvailable([hint('q1', 1)], 'q1')).toBe(false);
+  });
+
+  it('counts only hints for the same question', () => {
+    const turns: CoachTurn[] = [hint('q1', 1), hint('q1', 2), hint('q1', 3)];
+
+    expect(isPossibleAnswerAvailable(turns, 'q2')).toBe(false);
+  });
+
+  it('is not available when the third hint found the question resolved', () => {
+    const turns: CoachTurn[] = [
+      hint('q2', 1),
+      hint('q2', 2),
+      hint('q2', 3, 'resolved'),
+    ];
+
+    expect(isPossibleAnswerAvailable(turns, 'q2')).toBe(false);
+  });
+
+  it('finds the latest possible answer for a question', () => {
+    const turns: CoachTurn[] = [
+      possibleAnswer('q2', 'rev1'),
+      possibleAnswer('q1', 'rev2'),
+      possibleAnswer('q2', 'rev3'),
+    ];
+
+    expect(findLatestPossibleAnswer(turns, 'q2')).toEqual(
+      possibleAnswer('q2', 'rev3'),
+    );
+    expect(findLatestPossibleAnswer(turns, 'q3')).toBeUndefined();
   });
 });
 

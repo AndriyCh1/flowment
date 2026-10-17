@@ -243,6 +243,20 @@ export type CoachSessionDto = {
         outcome: 'hint' | 'resolved';
         text: string;
       }
+    | {
+        id: string;
+        role: 'possible-answer';
+        createdAt: string;
+        questionId: string;
+        designRevision: string;
+        approach: string;
+        rationale: string;
+        suggestedInteractions: Array<{
+          from: string;
+          to: string;
+          text: string;
+        }>;
+      }
   >;
   activeQuestionId: string | null;
   designRevision: string | null;
@@ -257,6 +271,11 @@ export type CoachNextDto = {
 };
 
 export type CoachHintRequestDto = {
+  questionId: string;
+  scenarioId?: string;
+};
+
+export type CoachPossibleAnswerRequestDto = {
   questionId: string;
   scenarioId?: string;
 };
@@ -489,6 +508,32 @@ export type RequestCoachHintResponses = {
 
 export type RequestCoachHintResponse =
   RequestCoachHintResponses[keyof RequestCoachHintResponses];
+
+export type RequestPossibleAnswerData = {
+  body: CoachPossibleAnswerRequestDto;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/possible-answer';
+};
+
+export type RequestPossibleAnswerErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+  409: ErrorResponseDto;
+  503: ErrorResponseDto;
+};
+
+export type RequestPossibleAnswerError =
+  RequestPossibleAnswerErrors[keyof RequestPossibleAnswerErrors];
+
+export type RequestPossibleAnswerResponses = {
+  200: CoachSessionDto;
+};
+
+export type RequestPossibleAnswerResponse =
+  RequestPossibleAnswerResponses[keyof RequestPossibleAnswerResponses];
 
 export type ReplyToCoachData = {
   body: CoachReplyDto;

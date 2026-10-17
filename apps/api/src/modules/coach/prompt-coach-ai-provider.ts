@@ -10,12 +10,15 @@ import { InjectAiClient, type AiClient } from '../../infrastructure/ai';
 import {
   CoachDraftSchema,
   HintDraftSchema,
+  PossibleAnswerDraftSchema,
   type CoachAiProvider,
   type CoachDraft,
   type CoachInput,
   type HintDraft,
   type HintInput,
   type ObjectiveEvaluationInput,
+  type PossibleAnswerDraft,
+  type PossibleAnswerInput,
 } from './coach-ai-provider';
 import {
   CLARIFICATION_HINT_INSTRUCTIONS,
@@ -24,6 +27,7 @@ import {
   OBJECTIVE_GAP_INSTRUCTIONS,
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
   OPEN_PROJECT_INSTRUCTIONS,
+  POSSIBLE_ANSWER_INSTRUCTIONS,
 } from './coach-prompts';
 
 const OpenResponseFormat = z.object({
@@ -42,6 +46,14 @@ const ObjectiveQuestionFormat = z.object({
 const HintFormat = z.object({
   outcome: HintOutcomeSchema,
   text: z.string(),
+});
+
+const PossibleAnswerFormat = z.object({
+  approach: z.string(),
+  rationale: z.string(),
+  suggestedInteractions: z.array(
+    z.object({ from: z.string(), to: z.string(), text: z.string() }),
+  ),
 });
 
 const ObjectiveEvaluationFormat = z.object({
@@ -120,6 +132,27 @@ export class PromptCoachAiProvider implements CoachAiProvider {
     });
 
     return HintDraftSchema.parse(output);
+  }
+
+  async generatePossibleAnswer({
+    context,
+    question,
+    previousHints,
+    objectives,
+  }: PossibleAnswerInput): Promise<PossibleAnswerDraft> {
+    const output = await this.ai.generateObject({
+      name: 'coach_possible_answer',
+      instructions: POSSIBLE_ANSWER_INSTRUCTIONS,
+      input: JSON.stringify({
+        context,
+        question,
+        previousHints,
+        ...(objectives.length > 0 ? { objectives } : {}),
+      }),
+      schema: PossibleAnswerFormat,
+    });
+
+    return PossibleAnswerDraftSchema.parse(output);
   }
 
   async evaluateObjective({

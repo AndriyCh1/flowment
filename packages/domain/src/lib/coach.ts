@@ -166,10 +166,32 @@ export const HintTurnSchema = z.object({
 
 export type HintTurn = z.infer<typeof HintTurnSchema>;
 
+export const SuggestedInteractionSchema = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  text: z.string(),
+});
+
+export type SuggestedInteraction = z.infer<typeof SuggestedInteractionSchema>;
+
+export const PossibleAnswerTurnSchema = z.object({
+  id: IdSchema,
+  role: z.literal('possible-answer'),
+  createdAt: z.iso.datetime(),
+  questionId: IdSchema,
+  designRevision: z.string().min(1),
+  approach: z.string().min(1),
+  rationale: z.string().min(1),
+  suggestedInteractions: z.array(SuggestedInteractionSchema),
+});
+
+export type PossibleAnswerTurn = z.infer<typeof PossibleAnswerTurnSchema>;
+
 export const CoachTurnSchema = z.discriminatedUnion('role', [
   LearnerTurnSchema,
   CoachResponseTurnSchema,
   HintTurnSchema,
+  PossibleAnswerTurnSchema,
 ]);
 
 export type CoachTurn = z.infer<typeof CoachTurnSchema>;
@@ -242,6 +264,27 @@ export function nextHintLevel(
   return hints.length < maxHintsForPurpose(question.purpose)
     ? hints.length + 1
     : null;
+}
+
+export function isPossibleAnswerAvailable(
+  turns: readonly CoachTurn[],
+  questionId: string,
+): boolean {
+  return hintsForQuestion(turns, questionId).some(
+    ({ level, outcome }) => level === MAX_HINTS && outcome === 'hint',
+  );
+}
+
+export function findLatestPossibleAnswer(
+  turns: readonly CoachTurn[],
+  questionId: string,
+): PossibleAnswerTurn | undefined {
+  return turns
+    .filter(
+      (turn): turn is PossibleAnswerTurn =>
+        turn.role === 'possible-answer' && turn.questionId === questionId,
+    )
+    .at(-1);
 }
 
 export function designStepIds(design: SystemDesign): Set<string> {

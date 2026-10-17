@@ -9,6 +9,7 @@ import {
   OBJECTIVE_GAP_INSTRUCTIONS,
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
   OPEN_PROJECT_INSTRUCTIONS,
+  POSSIBLE_ANSWER_INSTRUCTIONS,
 } from './coach-prompts';
 import { PromptCoachAiProvider } from './prompt-coach-ai-provider';
 
@@ -301,6 +302,110 @@ describe('PromptCoachAiProvider', () => {
           question: reviewQuestion,
           level: 1,
           previousHints: [],
+          objectives: [],
+        }),
+      ).rejects.toThrow(ZodError);
+    });
+  });
+
+  describe('generatePossibleAnswer', () => {
+    const reviewQuestion = {
+      purpose: 'review' as const,
+      text: 'How does the Worker get the file key?',
+      relatedStepIds: ['s3'],
+    };
+
+    const previousHints = [
+      'Look at step 3.',
+      'The Worker has a job id. What does it need?',
+      'Consider loading the stored job first.',
+    ];
+
+    const modelOutput = {
+      approach: 'Before step 3, the Worker loads the job from the Job DB.',
+      rationale: 'The stored job holds the file key the Worker needs.',
+      suggestedInteractions: [
+        { from: 'Worker', to: 'Job DB', text: 'Load job(jobId)' },
+        { from: 'Job DB', to: 'Worker', text: 'Job { sourceFileKey }' },
+      ],
+    };
+
+    it('sends the question and the hints with the possible answer instructions', async () => {
+      const { provider, requests } = setup(modelOutput);
+
+      const draft = await provider.generatePossibleAnswer({
+        context,
+        question: reviewQuestion,
+        previousHints,
+        objectives: [],
+      });
+
+      expect(requests).toEqual([
+        {
+          name: 'coach_possible_answer',
+          instructions: POSSIBLE_ANSWER_INSTRUCTIONS,
+          input: JSON.stringify({
+            context,
+            question: reviewQuestion,
+            previousHints,
+          }),
+        },
+      ]);
+      expect(draft).toEqual(modelOutput);
+    });
+
+    it('includes the objectives in an exercise', async () => {
+      const { provider, requests } = setup(modelOutput);
+
+      await provider.generatePossibleAnswer({
+        context,
+        question: reviewQuestion,
+        previousHints,
+        objectives: [objective],
+      });
+
+      expect(JSON.parse(requests[0].input)).toMatchObject({
+        objectives: [objective],
+      });
+    });
+
+    it('accepts an answer without a suggested sequence', async () => {
+      const { provider } = setup({ ...modelOutput, suggestedInteractions: [] });
+
+      const draft = await provider.generatePossibleAnswer({
+        context,
+        question: reviewQuestion,
+        previousHints,
+        objectives: [],
+      });
+
+      expect(draft.suggestedInteractions).toEqual([]);
+    });
+
+    it('rejects a blank rationale', async () => {
+      const { provider } = setup({ ...modelOutput, rationale: ' ' });
+
+      await expect(
+        provider.generatePossibleAnswer({
+          context,
+          question: reviewQuestion,
+          previousHints,
+          objectives: [],
+        }),
+      ).rejects.toThrow(ZodError);
+    });
+
+    it('rejects a suggested interaction without a receiver', async () => {
+      const { provider } = setup({
+        ...modelOutput,
+        suggestedInteractions: [{ from: 'Worker', to: '', text: 'Load job' }],
+      });
+
+      await expect(
+        provider.generatePossibleAnswer({
+          context,
+          question: reviewQuestion,
+          previousHints,
           objectives: [],
         }),
       ).rejects.toThrow(ZodError);

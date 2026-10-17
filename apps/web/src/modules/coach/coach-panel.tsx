@@ -7,6 +7,7 @@ import {
   useReplyToCoach,
   useRequestCoachHint,
   useRequestCoachResponse,
+  useRequestPossibleAnswer,
   useResetCoach,
   useSaveModelingIntent,
 } from './coach-queries';
@@ -30,6 +31,7 @@ export function CoachPanel({
   const saveIntent = useSaveModelingIntent(projectId);
   const requestNext = useRequestCoachResponse(projectId);
   const requestHint = useRequestCoachHint(projectId);
+  const requestAnswer = useRequestPossibleAnswer(projectId);
   const sendReply = useReplyToCoach(projectId);
   const resetCoach = useResetCoach(projectId);
 
@@ -37,14 +39,20 @@ export function CoachPanel({
     saveIntent.isPending ||
     requestNext.isPending ||
     requestHint.isPending ||
+    requestAnswer.isPending ||
     sendReply.isPending ||
     resetCoach.isPending;
+  const thinking =
+    requestNext.isPending || requestHint.isPending || requestAnswer.isPending;
   const blocked = busy || designSaving;
 
   const askCoach = () => requestNext.mutate({ scenarioId });
 
   const requestHintForQuestion = (questionId: string) =>
     requestHint.mutate({ questionId, scenarioId });
+
+  const requestPossibleAnswerForQuestion = (questionId: string) =>
+    requestAnswer.mutate({ questionId, scenarioId });
 
   const start = (modelingIntent: string) => {
     if (modelingIntent) {
@@ -60,6 +68,7 @@ export function CoachPanel({
   const reset = () => {
     requestNext.reset();
     requestHint.reset();
+    requestAnswer.reset();
     sendReply.reset();
     resetCoach.mutate();
   };
@@ -68,6 +77,7 @@ export function CoachPanel({
     saveIntent,
     requestNext,
     requestHint,
+    requestAnswer,
     sendReply,
     resetCoach,
   ].find((mutation) => mutation.isError)?.error;
@@ -98,11 +108,12 @@ export function CoachPanel({
           onStart={start}
           onAsk={askCoach}
           onHint={requestHintForQuestion}
+          onPossibleAnswer={requestPossibleAnswerForQuestion}
           onReply={reply}
           onReset={reset}
         />
       )}
-      {(requestNext.isPending || requestHint.isPending) && (
+      {thinking && (
         <p aria-live="polite" className="text-sm text-zinc-500">
           The coach is thinking…
         </p>

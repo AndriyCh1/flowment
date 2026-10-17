@@ -15,6 +15,7 @@ import {
   type CoachReply,
 } from './conversation/coach-reply-form';
 import { HintRequest } from './conversation/hint-request';
+import { PossibleAnswerRequest } from './conversation/possible-answer-request';
 
 type CoachSessionViewProps = {
   session: CoachSessionDto;
@@ -25,6 +26,7 @@ type CoachSessionViewProps = {
   onStart: (modelingIntent: string) => void;
   onAsk: () => void;
   onHint: (questionId: string) => void;
+  onPossibleAnswer: (questionId: string) => void;
   onReply: (questionId: string, reply: CoachReply) => void;
   onReset: () => void;
 };
@@ -38,6 +40,7 @@ export function CoachSessionView({
   onStart,
   onAsk,
   onHint,
+  onPossibleAnswer,
   onReply,
   onReset,
 }: CoachSessionViewProps) {
@@ -51,9 +54,10 @@ export function CoachSessionView({
   const activeQuestion = activeQuestionId
     ? findCoachQuestion(turns, activeQuestionId)
     : undefined;
+  const currentDesignRevision = designRevision(design);
   const designChanged =
     session.designRevision !== null &&
-    session.designRevision !== designRevision(design);
+    session.designRevision !== currentDesignRevision;
   const askLabel =
     turns.length === 0
       ? 'Ask the coach'
@@ -80,12 +84,21 @@ export function CoachSessionView({
             </div>
           )}
           {activeQuestion && (
-            <HintRequest
-              question={activeQuestion}
-              turns={turns}
-              disabled={blocked}
-              onHint={() => onHint(activeQuestion.questionId)}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <HintRequest
+                question={activeQuestion}
+                turns={turns}
+                disabled={blocked}
+                onHint={() => onHint(activeQuestion.questionId)}
+              />
+              <PossibleAnswerRequest
+                questionId={activeQuestion.questionId}
+                turns={turns}
+                currentDesignRevision={currentDesignRevision}
+                disabled={blocked}
+                onRequest={() => onPossibleAnswer(activeQuestion.questionId)}
+              />
+            </div>
           )}
           <CoachReplyForm
             key={activeQuestionId}

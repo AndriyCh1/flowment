@@ -219,6 +219,18 @@ describe('buildCoachContext', () => {
         text: 'It asks which half of the flow to start with.',
       },
       {
+        id: 't2c',
+        role: 'possible-answer',
+        createdAt: '2026-10-11T10:01:45.000Z',
+        questionId: 'q1',
+        designRevision: 'rev1',
+        approach: 'Start with sending.',
+        rationale: 'Sending happens first.',
+        suggestedInteractions: [
+          { from: 'Worker', to: 'Job DB', text: 'Load job' },
+        ],
+      },
+      {
         id: 't3',
         role: 'coach',
         createdAt: '2026-10-11T10:02:00.000Z',
@@ -254,6 +266,15 @@ describe('buildCoachContext', () => {
         level: 1,
         outcome: 'hint',
         text: 'It asks which half of the flow to start with.',
+      },
+      {
+        role: 'coach',
+        kind: 'possible-answer',
+        approach: 'Start with sending.',
+        rationale: 'Sending happens first.',
+        suggestedInteractions: [
+          { from: 'Worker', to: 'Job DB', text: 'Load job' },
+        ],
       },
       {
         role: 'coach',

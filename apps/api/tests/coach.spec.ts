@@ -157,6 +157,11 @@ describe('Coach API', () => {
   const requestHint = <T = CoachSession>(projectId: string, body: unknown) =>
     coach<T>(projectId, 'POST', '/hint', body);
 
+  const requestPossibleAnswer = <T = CoachSession>(
+    projectId: string,
+    body: unknown,
+  ) => coach<T>(projectId, 'POST', '/possible-answer', body);
+
   const setIntent = (projectId: string, modelingIntent: string) =>
     coach(projectId, 'PUT', '/intent', { modelingIntent });
 
@@ -178,6 +183,12 @@ describe('Coach API', () => {
   const hintTurns = (session: CoachSession) =>
     session.turns.filter(
       (turn): turn is CoachTurnOf<'hint'> => turn.role === 'hint',
+    );
+
+  const possibleAnswerTurns = (session: CoachSession) =>
+    session.turns.filter(
+      (turn): turn is CoachTurnOf<'possible-answer'> =>
+        turn.role === 'possible-answer',
     );
 
   const lastOutput = (session: CoachSession) => {
@@ -1189,6 +1200,268 @@ describe('Coach API', () => {
 
     it('returns 404 for an unknown project', async () => {
       const { status } = await requestHint<ErrorBody>(MISSING_ID, {
+        questionId: 'q',
+      });
+
+      expect(status).toBe(404);
+    });
+  });
+
+  describe('POST /api/projects/:projectId/coach/possible-answer', () => {
+    const hints = [
+      'Look at step 3.',
+      'The Worker has a job id. What does it need?',
+      'Consider loading the stored job first.',
+    ];
+
+    const possibleAnswer = {
+      approach: 'Before step 3, the Worker loads the job from the Job DB.',
+      rationale: 'The stored job holds the rows the Worker validates.',
+      suggestedInteractions: [
+        { from: 'Worker', to: 'Job DB', text: 'Load job(jobId)' },
+        { from: 'Job DB', to: 'Worker', text: 'Job { rows }' },
+      ],
+    };
+
+    const useHints = async (
+      projectId: string,
+      questionId: string,
+      count = hints.length,
+    ) => {
+      ai.willHint(
+        ...hints.slice(0, count).map((text) => ({ outcome: 'hint', text })),
+      );
+      for (let given = 0; given < count; given += 1) {
+        await requestHint(projectId, { questionId });
+      }
+    };
+
+    const askReviewAndUseHints = async (count = hints.length) => {
+      const project = await createProject(uploadDesign);
+      ai.willRespond(
+        review('How does the Worker know which rows to validate?', ['s3']),
+      );
+      const questionId = activeQuestionId((await next(project.id)).body);
+      await useHints(project.id, questionId, count);
+      const { body: session } = await coach(project.id, 'GET');
+      return { project, questionId, session };
+    };
+
+    it('shows one possible answer after the third hint', async () => {
+      const { project, questionId, session } = await askReviewAndUseHints();
+      ai.willAnswer(possibleAnswer);
+
+      const { status, body } = await requestPossibleAnswer(project.id, {
+        questionId,
+        scenarioId: 'upload',
+      });
+
+      expect(status).toBe(200);
+      expect(body.activeQuestionId).toBe(questionId);
+      expect(body.stage).toBe(session.stage);
+      expect(body.designRevision).toBe(session.designRevision);
+      expect(possibleAnswerTurns(body)).toEqual([
+        {
+          id: expect.any(String),
+          role: 'possible-answer',
+          createdAt: expect.any(String),
+          questionId,
+          designRevision: designRevision(uploadDesign),
+          ...possibleAnswer,
+        },
+      ]);
+      expect(ai.possibleAnswerInputs).toEqual([
+        {
+          context: expect.objectContaining({
+            designRevision: designRevision(uploadDesign),
+            scenarios: [
+              expect.objectContaining({ id: 'upload', selected: true }),
+              expect.objectContaining({ id: 'lookup', selected: false }),
+            ],
+          }),
+          question: {
+            purpose: 'review',
+            text: 'How does the Worker know which rows to validate?',
+            relatedStepIds: ['s3'],
+          },
+          previousHints: hints,
+          objectives: [],
+        },
+      ]);
+    });
+
+    it('is not available before the third hint', async () => {
+      const { project, questionId } = await askReviewAndUseHints(2);
+
+      const { status, body } = await requestPossibleAnswer<ErrorBody>(
+        project.id,
+        { questionId },
+      );
+
+      expect(status).toBe(409);
+      expect(body.message).toBe(
+        'A possible answer is available only after the third hint',
+      );
+      expect(ai.possibleAnswerInputs).toHaveLength(0);
+    });
+
+    it('is not available for a clarification question', async () => {
+      const project = await createProject();
+      await setIntent(project.id, 'A notification system');
+      ai.willRespond(clarify('Are you focusing on sending or receiving?'));
+      const questionId = activeQuestionId((await next(project.id)).body);
+      await useHints(project.id, questionId, 1);
+
+      const { status } = await requestPossibleAnswer<ErrorBody>(project.id, {
+        questionId,
+      });
+
+      expect(status).toBe(409);
+      expect(ai.possibleAnswerInputs).toHaveLength(0);
+    });
+
+    it('returns the stored answer while the design is unchanged', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      ai.willAnswer(possibleAnswer);
+
+      const first = await requestPossibleAnswer(project.id, { questionId });
+      const second = await requestPossibleAnswer(project.id, { questionId });
+
+      expect(second.status).toBe(200);
+      expect(second.body).toEqual(first.body);
+      expect(possibleAnswerTurns(second.body)).toHaveLength(1);
+      expect(ai.possibleAnswerInputs).toHaveLength(1);
+    });
+
+    it('shows a new answer once the design has changed', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      const changedDesign: SystemDesign = { ...uploadDesign, assumptions: [] };
+      ai.willAnswer(possibleAnswer, {
+        ...possibleAnswer,
+        approach: 'Before step 3, the Worker reads the job record.',
+      });
+
+      await requestPossibleAnswer(project.id, { questionId });
+      await api.request('PATCH', `/api/projects/${project.id}`, {
+        systemDesign: changedDesign,
+      });
+      const { body } = await requestPossibleAnswer(project.id, { questionId });
+
+      expect(
+        possibleAnswerTurns(body).map(({ designRevision, approach }) => ({
+          designRevision,
+          approach,
+        })),
+      ).toEqual([
+        {
+          designRevision: designRevision(uploadDesign),
+          approach: possibleAnswer.approach,
+        },
+        {
+          designRevision: designRevision(changedDesign),
+          approach: 'Before step 3, the Worker reads the job record.',
+        },
+      ]);
+      expect(ai.possibleAnswerInputs[1].context.designRevision).toBe(
+        designRevision(changedDesign),
+      );
+    });
+
+    it('passes the objectives in an exercise', async () => {
+      const project = await createProject(uploadDesign);
+      await startExercise(project.id, [objective]);
+      ai.willEvaluate({ status: 'unsatisfied', evidence: [], gap: 'A gap' });
+      ai.willRespond(review('What does the Worker know at step 3?', ['s3']));
+      const questionId = activeQuestionId((await next(project.id)).body);
+      await useHints(project.id, questionId);
+      ai.willAnswer(possibleAnswer);
+
+      await requestPossibleAnswer(project.id, { questionId });
+
+      expect(ai.possibleAnswerInputs[0].objectives).toEqual([objective]);
+    });
+
+    it('lets the next coach response see the answer', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      ai.willAnswer(possibleAnswer);
+      ai.willRespond(guide('What does the Worker do next?'));
+      await requestPossibleAnswer(project.id, { questionId });
+      await reply(project.id, { questionId, kind: 'skip' });
+
+      await next(project.id);
+
+      expect(ai.questionInputs[1].context.conversation).toContainEqual({
+        role: 'coach',
+        kind: 'possible-answer',
+        ...possibleAnswer,
+      });
+    });
+
+    it('keeps the session when the provider fails', async () => {
+      const { project, questionId, session } = await askReviewAndUseHints();
+      ai.willAnswer(new Error('upstream timeout'));
+
+      const failed = await requestPossibleAnswer<ErrorBody>(project.id, {
+        questionId,
+      });
+      const { body } = await coach(project.id, 'GET');
+
+      expect(failed.status).toBe(503);
+      expect(body).toEqual(session);
+    });
+
+    it('rejects output that does not match the contract', async () => {
+      const { project, questionId, session } = await askReviewAndUseHints();
+      ai.willAnswer({ ...possibleAnswer, approach: ' ' });
+
+      const { status } = await requestPossibleAnswer<ErrorBody>(project.id, {
+        questionId,
+      });
+      const { body } = await coach(project.id, 'GET');
+
+      expect(status).toBe(503);
+      expect(body).toEqual(session);
+    });
+
+    it('accepts only one of two simultaneous requests', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      ai.willAnswer(possibleAnswer, possibleAnswer);
+
+      const results = await Promise.all([
+        requestPossibleAnswer<unknown>(project.id, { questionId }),
+        requestPossibleAnswer<unknown>(project.id, { questionId }),
+      ]);
+      const { body } = await coach(project.id, 'GET');
+
+      expect(results.map(({ status }) => status).sort()).toEqual([200, 409]);
+      expect(possibleAnswerTurns(body)).toHaveLength(1);
+    });
+
+    it('rejects a request for a question that is not active', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      await reply(project.id, { questionId, kind: 'skip' });
+
+      const { status, body } = await requestPossibleAnswer<ErrorBody>(
+        project.id,
+        { questionId },
+      );
+
+      expect(status).toBe(409);
+      expect(body.message).toBe('That question is no longer active');
+      expect(ai.possibleAnswerInputs).toHaveLength(0);
+    });
+
+    it('never changes the system design', async () => {
+      const { project, questionId } = await askReviewAndUseHints();
+      ai.willAnswer(possibleAnswer);
+
+      await requestPossibleAnswer(project.id, { questionId });
+
+      expect(await getProject(project.id)).toEqual(project);
+    });
+
+    it('returns 404 for an unknown project', async () => {
+      const { status } = await requestPossibleAnswer<ErrorBody>(MISSING_ID, {
         questionId: 'q',
       });
 

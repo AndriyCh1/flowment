@@ -35,6 +35,9 @@ import type {
   RequestCoachResponseData,
   RequestCoachResponseErrors,
   RequestCoachResponseResponses,
+  RequestPossibleAnswerData,
+  RequestPossibleAnswerErrors,
+  RequestPossibleAnswerResponses,
   ResetCoachSessionData,
   ResetCoachSessionErrors,
   ResetCoachSessionResponses,
@@ -202,6 +205,26 @@ export const requestCoachHint = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: '/api/projects/{projectId}/coach/hint',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+export const requestPossibleAnswer = <ThrowOnError extends boolean = false>(
+  options: Options<RequestPossibleAnswerData, ThrowOnError>,
+): RequestResult<
+  RequestPossibleAnswerResponses,
+  RequestPossibleAnswerErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    RequestPossibleAnswerResponses,
+    RequestPossibleAnswerErrors,
+    ThrowOnError
+  >({
+    url: '/api/projects/{projectId}/coach/possible-answer',
     ...options,
     headers: {
       'Content-Type': 'application/json',
