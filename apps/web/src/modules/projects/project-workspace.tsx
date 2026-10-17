@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ProjectDto } from '../../api';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
+import { ArchitectureView } from '../architecture';
 import { CoachPanel } from '../coach';
 import { ComponentPanel } from '../design-components';
 import { ScenarioWorkspace } from '../scenarios';
@@ -62,12 +63,15 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           <ComponentPanel design={design} onDesignChange={changeDesign} />
         </aside>
-        <ScenarioWorkspace
-          design={design}
-          activeScenarioId={activeScenario?.id}
-          onActiveScenarioChange={setScenarioId}
-          onDesignChange={changeDesign}
-        />
+        <div className="min-w-0 space-y-8">
+          <ScenarioWorkspace
+            design={design}
+            activeScenarioId={activeScenario?.id}
+            onActiveScenarioChange={setScenarioId}
+            onDesignChange={changeDesign}
+          />
+          <ArchitectureView design={design} onSelectScenario={setScenarioId} />
+        </div>
         <aside className="lg:col-span-2 xl:sticky xl:top-4 xl:col-span-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
           <CoachPanel
             projectId={project.id}

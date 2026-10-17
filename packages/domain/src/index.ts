@@ -1,3 +1,4 @@
+export * from './lib/architecture.js';
 export * from './lib/assumption.js';
 export * from './lib/coach.js';
 export * from './lib/component.js';
