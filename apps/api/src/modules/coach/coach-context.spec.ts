@@ -210,6 +210,15 @@ describe('buildCoachContext', () => {
         relatedQuestionId: 'q1',
       },
       {
+        id: 't2b',
+        role: 'hint',
+        createdAt: '2026-10-11T10:01:30.000Z',
+        questionId: 'q1',
+        level: 1,
+        outcome: 'hint',
+        text: 'It asks which half of the flow to start with.',
+      },
+      {
         id: 't3',
         role: 'coach',
         createdAt: '2026-10-11T10:02:00.000Z',
@@ -239,6 +248,13 @@ describe('buildCoachContext', () => {
         text: 'Sending or receiving?',
       },
       { role: 'learner', kind: 'unknown', text: 'Not sure' },
+      {
+        role: 'coach',
+        kind: 'hint',
+        level: 1,
+        outcome: 'hint',
+        text: 'It asks which half of the flow to start with.',
+      },
       {
         role: 'coach',
         kind: 'next-action',

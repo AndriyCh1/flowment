@@ -3,6 +3,8 @@ import type {
   CoachAiProvider,
   CoachDraft,
   CoachInput,
+  HintDraft,
+  HintInput,
   ObjectiveEvaluationInput,
 } from '../src/modules/coach';
 
@@ -21,12 +23,18 @@ async function play(queue: Scripted[], method: string): Promise<unknown> {
 
 export class ScriptedCoachAiProvider implements CoachAiProvider {
   readonly questionInputs: CoachInput[] = [];
+  readonly hintInputs: HintInput[] = [];
   readonly evaluationInputs: ObjectiveEvaluationInput[] = [];
   private readonly questions: Scripted[] = [];
+  private readonly hints: Scripted[] = [];
   private readonly evaluations: Scripted[] = [];
 
   willRespond(...responses: Scripted[]): void {
     this.questions.push(...responses);
+  }
+
+  willHint(...responses: Scripted[]): void {
+    this.hints.push(...responses);
   }
 
   willEvaluate(...responses: Scripted[]): void {
@@ -35,14 +43,21 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
 
   reset(): void {
     this.questionInputs.length = 0;
+    this.hintInputs.length = 0;
     this.evaluationInputs.length = 0;
     this.questions.length = 0;
+    this.hints.length = 0;
     this.evaluations.length = 0;
   }
 
   async generateCoachQuestion(input: CoachInput): Promise<CoachDraft> {
     this.questionInputs.push(structuredClone(input));
     return (await play(this.questions, 'generateCoachQuestion')) as CoachDraft;
+  }
+
+  async generateHint(input: HintInput): Promise<HintDraft> {
+    this.hintInputs.push(structuredClone(input));
+    return (await play(this.hints, 'generateHint')) as HintDraft;
   }
 
   async evaluateObjective(

@@ -2,7 +2,7 @@ const ROLE = `You are the coach in Flowment, a tool where a learner practises re
 
 const INPUT_GUIDE = `The input is a JSON object. Its "context" has these parts, and they do not carry the same weight:
 - "modelingIntent" is the learner's own description of what they want to model. It is learner-stated and may be null.
-- "conversation" is the earlier coaching conversation, oldest first. Learner turns are learner-stated. A learner turn responds to the closest coach question before it. Its "kind" is "answer" (the answer is in "text"), "unknown" (they do not know the answer; "text" may add detail), "skip" (they chose not to answer) or "rephrase" (they want the question asked differently). Your own earlier turns are hypotheses and suggestions, never established facts.
+- "conversation" is the earlier coaching conversation, oldest first. Learner turns are learner-stated. A learner turn responds to the closest coach question before it. Its "kind" is "answer" (the answer is in "text"), "unknown" (they do not know the answer; "text" may add detail), "skip" (they chose not to answer) or "rephrase" (they want the question asked differently). Your own earlier turns are hypotheses and suggestions, never established facts. A coach turn with kind "hint" is a hint you gave for the closest question before it; outcome "resolved" means you found that question already settled by the model.
 - "components" and "scenarios" are the model the learner has built. Steps are in execution order, each with an "id" and a 1-based "number". A scenario with "selected": true is the one the learner is looking at.
 - "assumptions" are assumptions the learner has recorded. They are assumptions, not requirements.`;
 
@@ -62,7 +62,47 @@ ${RULES}
 
 Output fields: "text" (the question the learner reads) and "relatedStepIds" (step ids taken from the input, or an empty array).`;
 
-export const OBJECTIVE_EVALUATION_INSTRUCTIONS = `You evaluate one exercise objective in Flowment, a tool where a learner practises reasoning about how a software system executes by writing sequences of interactions between components.
+const HINT_INPUT = `Besides "context", the input has "question" (the question the learner is stuck on: its "purpose", "text" and, when present, the ids of the steps it refers to in "relatedStepIds"), "level" (which hint this is), and "previousHints" (the hints already given for this question, in order). In an exercise it also has "objectives", the explicit learning objectives the question serves.`;
+
+const HINT_RULES = `Rules:
+- Use the model as it is now, which may have changed since the question was asked.
+- Give one hint in plain language, at most three short sentences.
+- Add something the previous hints did not. Never repeat or merely reword them.
+- Mention a component, scenario or step only if it is in the input. Do not invent requirements.
+- Never give the answer, write the steps, list the components, or redesign the system. The learner makes every change themselves.`;
+
+export const HINT_INSTRUCTIONS = `${ROLE}
+
+${INPUT_GUIDE}
+
+${HINT_INPUT}
+
+The learner asked for a hint because they are stuck on the question. Hints come in three levels, each a little more specific than the last:
+- Level 1, attention: point to what to inspect, such as one component, step or moment in the scenario. Do not say what is wrong or what is missing.
+- Level 2, structure: narrow the reasoning. Name the relationship to think about, such as what a component has at that moment and what it needs next. Do not name the mechanism.
+- Level 3, concept: suggest the relevant mechanism or idea, such as looking up stored data or waiting for a confirmation, without writing the steps or the final sequence.
+
+First check whether the question still needs an answer. If the model or the conversation now settles what the question asks about, for example the missing step has been added, return outcome "resolved" with one sentence that says what settles it. Otherwise return outcome "hint" with a hint at the level in "level".
+
+${HINT_RULES}
+
+Output fields: "outcome" ("hint" or "resolved") and "text" (what the learner reads).`;
+
+export const CLARIFICATION_HINT_INSTRUCTIONS = `${ROLE}
+
+${INPUT_GUIDE}
+
+${HINT_INPUT}
+
+The question asks about what the learner wants to model, and they are unsure how to answer it. Help them interpret it: say briefly what it is getting at and why it matters for the next modeling step. You may offer two or three short, contrasting example answers, clearly presented as examples. Do not choose an answer for them, do not assume any particular sequence, and do not present an example as a requirement.
+
+If the description, the conversation or the model already answers the question, return outcome "resolved" with one sentence that says where it is answered. Otherwise return outcome "hint".
+
+${HINT_RULES}
+
+Output fields: "outcome" ("hint" or "resolved") and "text" (what the learner reads).`;
+
+export const OBJECTIVE_EVALUATION_INSTRUCTIONS =`You evaluate one exercise objective in Flowment, a tool where a learner practises reasoning about how a software system executes by writing sequences of interactions between components.
 
 ${INPUT_GUIDE}
 

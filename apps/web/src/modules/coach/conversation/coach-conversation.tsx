@@ -1,6 +1,11 @@
-import type { CoachTurn, SystemDesign } from '@flowment/domain';
+import {
+  findCoachQuestion,
+  type CoachTurn,
+  type SystemDesign,
+} from '@flowment/domain';
 import { useEffect, useRef } from 'react';
 import { CoachMessage } from './coach-message';
+import { HintMessage } from './hint-message';
 import { LearnerMessage } from './learner-message';
 
 type CoachConversationProps = {
@@ -28,6 +33,11 @@ export function CoachConversation({ turns, design }: CoachConversationProps) {
         <li key={turn.id}>
           {turn.role === 'coach' ? (
             <CoachMessage output={turn.output} design={design} />
+          ) : turn.role === 'hint' ? (
+            <HintMessage
+              turn={turn}
+              purpose={findCoachQuestion(turns, turn.questionId)?.purpose}
+            />
           ) : (
             <LearnerMessage turn={turn} />
           )}

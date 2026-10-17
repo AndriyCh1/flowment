@@ -3,6 +3,8 @@ import { ZodError } from 'zod';
 import type { AiClient, GenerateObjectRequest } from '../../infrastructure/ai';
 import type { CoachContext } from './coach-context';
 import {
+  CLARIFICATION_HINT_INSTRUCTIONS,
+  HINT_INSTRUCTIONS,
   OBJECTIVE_EVALUATION_INSTRUCTIONS,
   OBJECTIVE_GAP_INSTRUCTIONS,
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
@@ -214,6 +216,94 @@ describe('PromptCoachAiProvider', () => {
         },
       ]);
       expect(draft).toMatchObject({ type: 'question', purpose: 'clarify' });
+    });
+  });
+
+  describe('generateHint', () => {
+    const reviewQuestion = {
+      purpose: 'review' as const,
+      text: 'How does the Worker get the file key?',
+      relatedStepIds: ['s3'],
+    };
+
+    it('sends a reasoning question with the leveled hint instructions', async () => {
+      const { provider, requests } = setup({
+        outcome: 'hint',
+        text: 'Look at step 3.',
+      });
+
+      const draft = await provider.generateHint({
+        context,
+        question: reviewQuestion,
+        level: 2,
+        previousHints: ['Look at the Worker.'],
+        objectives: [],
+      });
+
+      expect(requests).toEqual([
+        {
+          name: 'coach_hint',
+          instructions: HINT_INSTRUCTIONS,
+          input: JSON.stringify({
+            context,
+            question: reviewQuestion,
+            level: 2,
+            previousHints: ['Look at the Worker.'],
+          }),
+        },
+      ]);
+      expect(draft).toEqual({ outcome: 'hint', text: 'Look at step 3.' });
+    });
+
+    it('sends a clarification with the interpretation instructions', async () => {
+      const { provider, requests } = setup({
+        outcome: 'hint',
+        text: 'It asks which half of the flow to start with.',
+      });
+
+      await provider.generateHint({
+        context,
+        question: { purpose: 'clarify', text: 'Sending or receiving?' },
+        level: 1,
+        previousHints: [],
+        objectives: [],
+      });
+
+      expect(requests[0].instructions).toBe(CLARIFICATION_HINT_INSTRUCTIONS);
+    });
+
+    it('includes the objectives in an exercise', async () => {
+      const { provider, requests } = setup({
+        outcome: 'resolved',
+        text: 'Step 2 settles it.',
+      });
+
+      const draft = await provider.generateHint({
+        context,
+        question: reviewQuestion,
+        level: 1,
+        previousHints: [],
+        objectives: [objective],
+      });
+
+      expect(JSON.parse(requests[0].input)).toMatchObject({
+        objectives: [objective],
+      });
+      expect(draft).toEqual({ outcome: 'resolved', text: 'Step 2 settles it.' });
+    });
+
+    it('rejects blank text', async () => {
+      const { provider } = setup({ outcome: 'hint', text: ' ' });
+
+      await expect(
+        provider.generateHint({
+          context,
+          question: reviewQuestion,
+          level: 1,
+          previousHints: [],
+          objectives: [],
+        }),
+      ).rejects.toThrow(ZodError);
     });
   });
 

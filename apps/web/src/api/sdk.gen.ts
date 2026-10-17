@@ -29,6 +29,9 @@ import type {
   ReplyToCoachData,
   ReplyToCoachErrors,
   ReplyToCoachResponses,
+  RequestCoachHintData,
+  RequestCoachHintErrors,
+  RequestCoachHintResponses,
   RequestCoachResponseData,
   RequestCoachResponseErrors,
   RequestCoachResponseResponses,
@@ -179,6 +182,26 @@ export const requestCoachResponse = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: '/api/projects/{projectId}/coach/next',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+export const requestCoachHint = <ThrowOnError extends boolean = false>(
+  options: Options<RequestCoachHintData, ThrowOnError>,
+): RequestResult<
+  RequestCoachHintResponses,
+  RequestCoachHintErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    RequestCoachHintResponses,
+    RequestCoachHintErrors,
+    ThrowOnError
+  >({
+    url: '/api/projects/{projectId}/coach/hint',
     ...options,
     headers: {
       'Content-Type': 'application/json',

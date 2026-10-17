@@ -1,9 +1,10 @@
-import type {
-  CoachAction,
-  CoachQuestionPurpose,
-  CoachStage,
-  LearnerReplyKind,
-  SystemDesign,
+import {
+  maxHintsForPurpose,
+  type CoachAction,
+  type CoachQuestionPurpose,
+  type CoachStage,
+  type LearnerReplyKind,
+  type SystemDesign,
 } from '@flowment/domain';
 import { scenarioTitle } from '../../shared/design-labels';
 
@@ -37,6 +38,11 @@ export const replyKindLabels: Record<
   skip: 'Skipped this question',
   rephrase: 'Asked for the question in other words',
 };
+
+export function hintLabel(purpose: CoachQuestionPurpose, level: number): string {
+  const limit = maxHintsForPurpose(purpose);
+  return limit > 1 ? `Hint ${level} of ${limit}` : 'Hint';
+}
 
 export function stepReference(
   design: SystemDesign,

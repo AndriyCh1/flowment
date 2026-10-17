@@ -8,6 +8,14 @@ export class CoachQuestionNotActiveError extends ApplicationError {
   }
 }
 
+export class CoachHintsExhaustedError extends ApplicationError {
+  readonly code = ErrorCode.CONFLICT;
+
+  constructor() {
+    super('There are no more hints for this question');
+  }
+}
+
 export class CoachSessionChangedError extends ApplicationError {
   readonly code = ErrorCode.CONFLICT;
 

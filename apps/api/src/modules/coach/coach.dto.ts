@@ -31,6 +31,11 @@ export const CoachNextSchema = z.object({
   scenarioId: IdSchema.optional(),
 });
 
+export const CoachHintRequestSchema = z.object({
+  questionId: IdSchema,
+  scenarioId: IdSchema.optional(),
+});
+
 export const CoachReplySchema = z
   .object({
     questionId: IdSchema,
@@ -47,6 +52,7 @@ export type UpdateModelingIntentInput = z.infer<
   typeof UpdateModelingIntentSchema
 >;
 export type CoachNextInput = z.infer<typeof CoachNextSchema>;
+export type CoachHintRequestInput = z.infer<typeof CoachHintRequestSchema>;
 export type CoachReplyInput = z.infer<typeof CoachReplySchema>;
 
 export class CoachSessionDto extends createZodDto(CoachSessionSchema, {
@@ -56,4 +62,5 @@ export class UpdateModelingIntentDto extends createZodDto(
   UpdateModelingIntentSchema,
 ) {}
 export class CoachNextDto extends createZodDto(CoachNextSchema) {}
+export class CoachHintRequestDto extends createZodDto(CoachHintRequestSchema) {}
 export class CoachReplyDto extends createZodDto(CoachReplySchema) {}

@@ -4,11 +4,14 @@ export {
   type CoachDraft,
   type CoachFocus,
   type CoachInput,
+  type HintDraft,
+  type HintInput,
   type ObjectiveEvaluationInput,
 } from './coach-ai-provider';
 export type { CoachContext } from './coach-context';
 export type { CoachSession } from './coach.dto';
 export {
+  CoachHintsExhaustedError,
   CoachQuestionNotActiveError,
   CoachSessionChangedError,
   CoachUnavailableError,

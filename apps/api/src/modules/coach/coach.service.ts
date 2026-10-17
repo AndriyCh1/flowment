@@ -6,8 +6,10 @@ import {
   designRevision,
   designStepIds,
   findCoachQuestion,
+  hintsForQuestion,
   initialCoachStage,
   knownStepIds,
+  nextHintLevel,
   type CoachOutput,
   type CoachQuestion,
   type CoachQuestionPurpose,
@@ -20,6 +22,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import {
   InjectDb,
+  coachHintRequests,
   coachSessions,
   type Db,
 } from '../../infrastructure/database';
@@ -28,17 +31,20 @@ import {
   COACH_AI_PROVIDER,
   CoachDraftSchema,
   CoachQuestionDraftSchema,
+  HintDraftSchema,
   type CoachAiProvider,
   type CoachDraft,
   type CoachFocus,
 } from './coach-ai-provider';
 import { buildCoachContext, type CoachContext } from './coach-context';
 import type {
+  CoachHintRequestInput,
   CoachNextInput,
   CoachReplyInput,
   CoachSession,
 } from './coach.dto';
 import {
+  CoachHintsExhaustedError,
   CoachQuestionNotActiveError,
   CoachSessionChangedError,
   CoachUnavailableError,
@@ -93,11 +99,11 @@ function toSession({
   };
 }
 
-function isBlank(design: SystemDesign): boolean {
+function isEmptyDesign(design: SystemDesign): boolean {
   return design.components.length === 0 && design.scenarios.length === 0;
 }
 
-function question(
+function createQuestion(
   purpose: CoachQuestionPurpose,
   text: string,
   design: SystemDesign,
@@ -113,19 +119,19 @@ function question(
   };
 }
 
-function reviewPurpose(design: SystemDesign): CoachQuestionPurpose {
+function reviewOrGuidePurpose(design: SystemDesign): CoachQuestionPurpose {
   return designStepIds(design).size > 0 ? 'review' : 'guide';
 }
 
-function openProjectOutput(
+function openProjectOutputFromDraft(
   draft: CoachDraft,
   design: SystemDesign,
 ): CoachOutput {
   if (draft.type === 'next-action') {
     return draft;
   }
-  return question(
-    draft.purpose === 'review' ? reviewPurpose(design) : draft.purpose,
+  return createQuestion(
+    draft.purpose === 'review' ? reviewOrGuidePurpose(design) : draft.purpose,
     draft.text,
     design,
     draft.relatedStepIds,
@@ -142,13 +148,13 @@ export class CoachService {
     @Inject(COACH_AI_PROVIDER) private readonly ai: CoachAiProvider,
   ) {}
 
-  async get(projectId: string): Promise<CoachSession> {
+  async getSession(projectId: string): Promise<CoachSession> {
     await this.projects.get(projectId);
-    const row = await this.find(projectId);
+    const row = await this.findSessionRow(projectId);
     return row ? toSession(row) : emptySession(projectId);
   }
 
-  async setIntent(
+  async updateModelingIntent(
     projectId: string,
     modelingIntent: string,
   ): Promise<CoachSession> {
@@ -172,15 +178,19 @@ export class CoachService {
     return toSession(row);
   }
 
-  async next(
+  async requestCoachResponse(
     projectId: string,
     { scenarioId }: CoachNextInput,
   ): Promise<CoachSession> {
     const project = await this.projects.get(projectId);
     const design = SystemDesignSchema.parse(project.systemDesign);
-    const row = await this.ensure(projectId);
+    const row = await this.findOrCreateSessionRow(projectId);
 
-    const output = await this.respond(row, design, scenarioId ?? null);
+    const output = await this.generateCoachOutput(
+      row,
+      design,
+      scenarioId ?? null,
+    );
     const turn: CoachTurn = {
       id: randomUUID(),
       role: 'coach',
@@ -188,7 +198,7 @@ export class CoachService {
       output,
     };
 
-    const updated = await this.write(row, {
+    const updated = await this.updateSessionIfUnchanged(row, {
       turns: [...row.turns, turn],
       activeQuestionId: output.type === 'question' ? output.questionId : null,
       designRevision: designRevision(design),
@@ -200,18 +210,99 @@ export class CoachService {
     return toSession(updated);
   }
 
-  async reply(
+  async requestHint(
+    projectId: string,
+    { questionId, scenarioId }: CoachHintRequestInput,
+  ): Promise<CoachSession> {
+    const project = await this.projects.get(projectId);
+    const design = SystemDesignSchema.parse(project.systemDesign);
+    const row = await this.findOrCreateSessionRow(projectId);
+
+    const asked =
+      row.activeQuestionId === questionId
+        ? findCoachQuestion(row.turns, questionId)
+        : undefined;
+
+    if (!asked) {
+      throw new CoachQuestionNotActiveError();
+    }
+
+    const level = nextHintLevel(row.turns, asked);
+    if (level === null) {
+      throw new CoachHintsExhaustedError();
+    }
+
+    const relatedStepIds = knownStepIds(design, asked.relatedStepIds ?? []);
+    const draft = await this.callProvider('give a hint', HintDraftSchema, () =>
+      this.ai.generateHint({
+        context: this.buildContext(row, design, scenarioId ?? null),
+        question: {
+          purpose: asked.purpose,
+          text: asked.text,
+          ...(relatedStepIds.length > 0 ? { relatedStepIds } : {}),
+        },
+        level,
+        previousHints: hintsForQuestion(row.turns, questionId).map(
+          ({ text }) => text,
+        ),
+        objectives: row.mode === 'exercise' ? row.objectives : [],
+      }),
+    );
+
+    const turn: CoachTurn = {
+      id: randomUUID(),
+      role: 'hint',
+      createdAt: new Date().toISOString(),
+      questionId,
+      level,
+      outcome: draft.outcome,
+      text: draft.text,
+    };
+    const resolved = draft.outcome === 'resolved';
+
+    const updated = await this.db.transaction(async (tx) => {
+      const saved = await this.updateSessionIfUnchanged(
+        row,
+        {
+          turns: [...row.turns, turn],
+          ...(resolved ? { activeQuestionId: null } : {}),
+        },
+        tx,
+      );
+
+      if (saved) {
+        await tx.insert(coachHintRequests).values({
+          projectId,
+          questionId,
+          questionPurpose: asked.purpose,
+          level,
+          outcome: draft.outcome,
+          designRevision: designRevision(design),
+        });
+      }
+      return saved;
+    });
+
+    if (!updated) {
+      throw new CoachSessionChangedError();
+    }
+
+    return toSession(updated);
+  }
+
+  async replyToQuestion(
     projectId: string,
     { questionId, kind, text }: CoachReplyInput,
   ): Promise<CoachSession> {
     await this.projects.get(projectId);
 
     for (let attempt = 0; attempt < MAX_REPLY_ATTEMPTS; attempt += 1) {
-      const row = await this.ensure(projectId);
+      const row = await this.findOrCreateSessionRow(projectId);
       const asked =
         row.activeQuestionId === questionId
           ? findCoachQuestion(row.turns, questionId)
           : undefined;
+
       if (!asked) {
         throw new CoachQuestionNotActiveError();
       }
@@ -224,16 +315,18 @@ export class CoachService {
         text,
         relatedQuestionId: questionId,
       };
+
       const statesIntent =
         asked.purpose === 'discover' &&
         kind === 'answer' &&
         !row.modelingIntent;
 
-      const updated = await this.write(row, {
+      const updated = await this.updateSessionIfUnchanged(row, {
         turns: [...row.turns, turn],
         activeQuestionId: null,
         ...(statesIntent ? { modelingIntent: text } : {}),
       });
+
       if (updated) {
         return toSession(updated);
       }
@@ -242,9 +335,9 @@ export class CoachService {
     throw new CoachSessionChangedError();
   }
 
-  async reset(projectId: string): Promise<CoachSession> {
+  async resetConversation(projectId: string): Promise<CoachSession> {
     await this.projects.get(projectId);
-    const existing = await this.find(projectId);
+    const existing = await this.findSessionRow(projectId);
     if (!existing) {
       return emptySession(projectId);
     }
@@ -263,7 +356,9 @@ export class CoachService {
     return toSession(row);
   }
 
-  private async find(projectId: string): Promise<CoachSessionRow | undefined> {
+  private async findSessionRow(
+    projectId: string,
+  ): Promise<CoachSessionRow | undefined> {
     const [row] = await this.db
       .select()
       .from(coachSessions)
@@ -271,23 +366,26 @@ export class CoachService {
     return row;
   }
 
-  private async ensure(projectId: string): Promise<CoachSessionRow> {
+  private async findOrCreateSessionRow(
+    projectId: string,
+  ): Promise<CoachSessionRow> {
     await this.db
       .insert(coachSessions)
       .values({ projectId, stage: initialCoachStage('open-project') })
       .onConflictDoNothing();
-    const row = await this.find(projectId);
+    const row = await this.findSessionRow(projectId);
     if (!row) {
       throw new CoachSessionChangedError();
     }
     return row;
   }
 
-  private async write(
+  private async updateSessionIfUnchanged(
     row: CoachSessionRow,
     changes: CoachSessionChanges,
+    executor: Pick<Db, 'update'> = this.db,
   ): Promise<CoachSessionRow | undefined> {
-    const [updated] = await this.db
+    const [updated] = await executor
       .update(coachSessions)
       .set({ ...changes, version: row.version + 1 })
       .where(
@@ -300,12 +398,12 @@ export class CoachService {
     return updated;
   }
 
-  private async respond(
+  private buildContext(
     row: CoachSessionRow,
     design: SystemDesign,
     selectedScenarioId: string | null,
-  ): Promise<CoachOutput> {
-    const context = buildCoachContext({
+  ): CoachContext {
+    return buildCoachContext({
       projectId: row.projectId,
       mode: row.mode,
       modelingIntent: row.modelingIntent,
@@ -313,24 +411,32 @@ export class CoachService {
       design,
       selectedScenarioId,
     });
+  }
+
+  private async generateCoachOutput(
+    row: CoachSessionRow,
+    design: SystemDesign,
+    selectedScenarioId: string | null,
+  ): Promise<CoachOutput> {
+    const context = this.buildContext(row, design, selectedScenarioId);
 
     if (row.mode === 'exercise' && row.objectives.length > 0) {
-      return this.coachExercise(row.objectives, context, design);
+      return this.coachTowardObjectives(row.objectives, context, design);
     }
 
-    if (!context.modelingIntent && isBlank(design)) {
-      return question('discover', DISCOVERY_QUESTION, design);
+    if (!context.modelingIntent && isEmptyDesign(design)) {
+      return createQuestion('discover', DISCOVERY_QUESTION, design);
     }
 
-    const draft = await this.consult(
+    const draft = await this.callProvider(
       'generate a response',
       CoachDraftSchema,
       () => this.ai.generateCoachQuestion({ context, focus: { kind: 'open' } }),
     );
-    return openProjectOutput(draft, design);
+    return openProjectOutputFromDraft(draft, design);
   }
 
-  private async coachExercise(
+  private async coachTowardObjectives(
     objectives: readonly ExerciseObjective[],
     context: CoachContext,
     design: SystemDesign,
@@ -339,7 +445,7 @@ export class CoachService {
     const summaries: string[] = [];
 
     for (const objective of objectives) {
-      const evaluation = await this.consult(
+      const evaluation = await this.callProvider(
         'evaluate an objective',
         ObjectiveEvaluationSchema,
         () => this.ai.evaluateObjective({ context, objective }),
@@ -364,14 +470,16 @@ export class CoachService {
               objective,
               reason: evaluation.reason,
             };
-      const draft = await this.consult(
+      const draft = await this.callProvider(
         'ask about an objective',
         CoachQuestionDraftSchema,
         () => this.ai.generateCoachQuestion({ context, focus }),
       );
 
-      return question(
-        focus.kind === 'objective-gap' ? reviewPurpose(design) : 'clarify',
+      return createQuestion(
+        focus.kind === 'objective-gap'
+          ? reviewOrGuidePurpose(design)
+          : 'clarify',
         draft.text,
         design,
         draft.relatedStepIds,
@@ -385,7 +493,7 @@ export class CoachService {
     };
   }
 
-  private async consult<Schema extends z.ZodType>(
+  private async callProvider<Schema extends z.ZodType>(
     task: string,
     schema: Schema,
     call: () => Promise<unknown>,

@@ -1,5 +1,6 @@
 import {
   CoachActionSchema,
+  HintOutcomeSchema,
   ObjectiveEvaluationSchema,
   type ObjectiveEvaluation,
 } from '@flowment/domain';
@@ -8,12 +9,17 @@ import { z } from 'zod';
 import { InjectAiClient, type AiClient } from '../../infrastructure/ai';
 import {
   CoachDraftSchema,
+  HintDraftSchema,
   type CoachAiProvider,
   type CoachDraft,
   type CoachInput,
+  type HintDraft,
+  type HintInput,
   type ObjectiveEvaluationInput,
 } from './coach-ai-provider';
 import {
+  CLARIFICATION_HINT_INSTRUCTIONS,
+  HINT_INSTRUCTIONS,
   OBJECTIVE_EVALUATION_INSTRUCTIONS,
   OBJECTIVE_GAP_INSTRUCTIONS,
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
@@ -31,6 +37,11 @@ const OpenResponseFormat = z.object({
 const ObjectiveQuestionFormat = z.object({
   text: z.string(),
   relatedStepIds: z.array(z.string()),
+});
+
+const HintFormat = z.object({
+  outcome: HintOutcomeSchema,
+  text: z.string(),
 });
 
 const ObjectiveEvaluationFormat = z.object({
@@ -82,6 +93,33 @@ export class PromptCoachAiProvider implements CoachAiProvider {
       text,
       relatedStepIds,
     });
+  }
+
+  async generateHint({
+    context,
+    question,
+    level,
+    previousHints,
+    objectives,
+  }: HintInput): Promise<HintDraft> {
+    const clarification =
+      question.purpose === 'discover' || question.purpose === 'clarify';
+    const output = await this.ai.generateObject({
+      name: 'coach_hint',
+      instructions: clarification
+        ? CLARIFICATION_HINT_INSTRUCTIONS
+        : HINT_INSTRUCTIONS,
+      input: JSON.stringify({
+        context,
+        question,
+        level,
+        previousHints,
+        ...(objectives.length > 0 ? { objectives } : {}),
+      }),
+      schema: HintFormat,
+    });
+
+    return HintDraftSchema.parse(output);
   }
 
   async evaluateObjective({

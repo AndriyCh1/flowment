@@ -8,6 +8,8 @@ import {
   type CoachTurn,
   type Component,
   type ComponentKind,
+  type HintLevel,
+  type HintOutcome,
   type LearnerReplyKind,
   type SequenceScenario,
   type SequenceStep,
@@ -64,6 +66,13 @@ export type ContextTurn =
     }
   | { role: 'coach'; kind: 'next-action'; action: CoachAction; text: string }
   | { role: 'coach'; kind: 'objective-satisfied'; text: string }
+  | {
+      role: 'coach';
+      kind: 'hint';
+      level: HintLevel;
+      outcome: HintOutcome;
+      text: string;
+    }
   | { role: 'learner'; kind: LearnerReplyKind; text: string };
 
 export type CoachContext = {
@@ -145,6 +154,11 @@ function contextScenario(
 function contextTurn(turn: CoachTurn): ContextTurn {
   if (turn.role === 'learner') {
     return { role: 'learner', kind: turn.kind, text: turn.text };
+  }
+
+  if (turn.role === 'hint') {
+    const { level, outcome, text } = turn;
+    return { role: 'coach', kind: 'hint', level, outcome, text };
   }
 
   const { output } = turn;

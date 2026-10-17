@@ -5,6 +5,7 @@ import { stageLabels } from './coach-labels';
 import {
   useCoachSession,
   useReplyToCoach,
+  useRequestCoachHint,
   useRequestCoachResponse,
   useResetCoach,
   useSaveModelingIntent,
@@ -28,17 +29,22 @@ export function CoachPanel({
   const session = useCoachSession(projectId);
   const saveIntent = useSaveModelingIntent(projectId);
   const requestNext = useRequestCoachResponse(projectId);
+  const requestHint = useRequestCoachHint(projectId);
   const sendReply = useReplyToCoach(projectId);
   const resetCoach = useResetCoach(projectId);
 
   const busy =
     saveIntent.isPending ||
     requestNext.isPending ||
+    requestHint.isPending ||
     sendReply.isPending ||
     resetCoach.isPending;
   const blocked = busy || designSaving;
 
   const askCoach = () => requestNext.mutate({ scenarioId });
+
+  const requestHintForQuestion = (questionId: string) =>
+    requestHint.mutate({ questionId, scenarioId });
 
   const start = (modelingIntent: string) => {
     if (modelingIntent) {
@@ -53,13 +59,18 @@ export function CoachPanel({
 
   const reset = () => {
     requestNext.reset();
+    requestHint.reset();
     sendReply.reset();
     resetCoach.mutate();
   };
 
-  const error = [saveIntent, requestNext, sendReply, resetCoach].find(
-    (mutation) => mutation.isError,
-  )?.error;
+  const error = [
+    saveIntent,
+    requestNext,
+    requestHint,
+    sendReply,
+    resetCoach,
+  ].find((mutation) => mutation.isError)?.error;
 
   return (
     <section aria-labelledby="coach-heading" className="space-y-3">
@@ -86,11 +97,12 @@ export function CoachPanel({
           busy={busy}
           onStart={start}
           onAsk={askCoach}
+          onHint={requestHintForQuestion}
           onReply={reply}
           onReset={reset}
         />
       )}
-      {requestNext.isPending && (
+      {(requestNext.isPending || requestHint.isPending) && (
         <p aria-live="polite" className="text-sm text-zinc-500">
           The coach is thinking…
         </p>

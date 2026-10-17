@@ -144,9 +144,32 @@ export const CoachResponseTurnSchema = z.object({
 
 export type CoachResponseTurn = z.infer<typeof CoachResponseTurnSchema>;
 
+export const MAX_HINTS = 3;
+
+export const HintLevelSchema = z.int().min(1).max(MAX_HINTS);
+
+export type HintLevel = z.infer<typeof HintLevelSchema>;
+
+export const HintOutcomeSchema = z.enum(['hint', 'resolved']);
+
+export type HintOutcome = z.infer<typeof HintOutcomeSchema>;
+
+export const HintTurnSchema = z.object({
+  id: IdSchema,
+  role: z.literal('hint'),
+  createdAt: z.iso.datetime(),
+  questionId: IdSchema,
+  level: HintLevelSchema,
+  outcome: HintOutcomeSchema,
+  text: z.string().min(1),
+});
+
+export type HintTurn = z.infer<typeof HintTurnSchema>;
+
 export const CoachTurnSchema = z.discriminatedUnion('role', [
   LearnerTurnSchema,
   CoachResponseTurnSchema,
+  HintTurnSchema,
 ]);
 
 export type CoachTurn = z.infer<typeof CoachTurnSchema>;
@@ -191,6 +214,34 @@ export function findCoachQuestion(
     }
   }
   return undefined;
+}
+
+export function maxHintsForPurpose(purpose: CoachQuestionPurpose): number {
+  return purpose === 'guide' || purpose === 'review' ? MAX_HINTS : 1;
+}
+
+export function hintsForQuestion(
+  turns: readonly CoachTurn[],
+  questionId: string,
+): HintTurn[] {
+  return turns.filter(
+    (turn): turn is HintTurn =>
+      turn.role === 'hint' && turn.questionId === questionId,
+  );
+}
+
+export function nextHintLevel(
+  turns: readonly CoachTurn[],
+  question: CoachQuestion,
+): HintLevel | null {
+  const hints = hintsForQuestion(turns, question.questionId);
+  if (hints.some(({ outcome }) => outcome === 'resolved')) {
+    return null;
+  }
+
+  return hints.length < maxHintsForPurpose(question.purpose)
+    ? hints.length + 1
+    : null;
 }
 
 export function designStepIds(design: SystemDesign): Set<string> {

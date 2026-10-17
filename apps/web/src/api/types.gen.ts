@@ -234,6 +234,15 @@ export type CoachSessionDto = {
               summary: string;
             };
       }
+    | {
+        id: string;
+        role: 'hint';
+        createdAt: string;
+        questionId: string;
+        level: number;
+        outcome: 'hint' | 'resolved';
+        text: string;
+      }
   >;
   activeQuestionId: string | null;
   designRevision: string | null;
@@ -244,6 +253,11 @@ export type UpdateModelingIntentDto = {
 };
 
 export type CoachNextDto = {
+  scenarioId?: string;
+};
+
+export type CoachHintRequestDto = {
+  questionId: string;
   scenarioId?: string;
 };
 
@@ -449,6 +463,32 @@ export type RequestCoachResponseResponses = {
 
 export type RequestCoachResponseResponse =
   RequestCoachResponseResponses[keyof RequestCoachResponseResponses];
+
+export type RequestCoachHintData = {
+  body: CoachHintRequestDto;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/coach/hint';
+};
+
+export type RequestCoachHintErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+  409: ErrorResponseDto;
+  503: ErrorResponseDto;
+};
+
+export type RequestCoachHintError =
+  RequestCoachHintErrors[keyof RequestCoachHintErrors];
+
+export type RequestCoachHintResponses = {
+  200: CoachSessionDto;
+};
+
+export type RequestCoachHintResponse =
+  RequestCoachHintResponses[keyof RequestCoachHintResponses];
 
 export type ReplyToCoachData = {
   body: CoachReplyDto;

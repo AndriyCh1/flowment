@@ -8,10 +8,15 @@ import {
   coachStageAfter,
   designStepIds,
   findCoachQuestion,
+  maxHintsForPurpose,
   initialCoachStage,
   knownStepIds,
+  nextHintLevel,
+  hintsForQuestion,
   type CoachOutput,
+  type CoachQuestion,
   type CoachTurn,
+  type HintTurn,
 } from './coach.js';
 import type { SystemDesign } from './system-design.js';
 
@@ -58,7 +63,7 @@ const emptyDesign: SystemDesign = {
   assumptions: [],
 };
 
-const question: CoachOutput = {
+const question: CoachQuestion = {
   type: 'question',
   questionId: 'q1',
   purpose: 'clarify',
@@ -158,6 +163,34 @@ describe('CoachTurnSchema', () => {
     for (const turn of turns) {
       expect(CoachTurnSchema.parse(turn)).toEqual(turn);
     }
+  });
+
+  it('accepts a hint turn', () => {
+    const turn: CoachTurn = {
+      id: 't3',
+      role: 'hint',
+      createdAt: '2026-10-11T10:02:00.000Z',
+      questionId: 'q1',
+      level: 2,
+      outcome: 'hint',
+      text: 'What does the API know at that moment?',
+    };
+
+    expect(CoachTurnSchema.parse(turn)).toEqual(turn);
+  });
+
+  it('rejects a hint beyond the third level', () => {
+    expect(
+      CoachTurnSchema.safeParse({
+        id: 't3',
+        role: 'hint',
+        createdAt: '2026-10-11T10:02:00.000Z',
+        questionId: 'q1',
+        level: 4,
+        outcome: 'hint',
+        text: 'x',
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects a learner turn that names no question', () => {
@@ -283,6 +316,75 @@ describe('findCoachQuestion', () => {
 
   it('returns undefined for an unknown id', () => {
     expect(findCoachQuestion(turns, 'q2')).toBeUndefined();
+  });
+});
+
+describe('hints', () => {
+  const reviewQuestion: CoachQuestion = {
+    type: 'question',
+    questionId: 'q2',
+    purpose: 'review',
+    text: 'Where does the Worker get the file key?',
+  };
+
+  const hint = (
+    questionId: string,
+    level: number,
+    outcome: HintTurn['outcome'] = 'hint',
+  ): HintTurn => ({
+    id: `${questionId}-hint-${level}`,
+    role: 'hint',
+    createdAt: '2026-10-11T10:03:00.000Z',
+    questionId,
+    level,
+    outcome,
+    text: `Hint ${level}`,
+  });
+
+  it('allows three hints for guidance and review questions', () => {
+    expect(maxHintsForPurpose('guide')).toBe(3);
+    expect(maxHintsForPurpose('review')).toBe(3);
+  });
+
+  it('allows one hint for discovery and clarification questions', () => {
+    expect(maxHintsForPurpose('discover')).toBe(1);
+    expect(maxHintsForPurpose('clarify')).toBe(1);
+  });
+
+  it('collects the hints given for one question, in order', () => {
+    const turns: CoachTurn[] = [hint('q2', 1), hint('q1', 1), hint('q2', 2)];
+
+    expect(hintsForQuestion(turns, 'q2')).toEqual([hint('q2', 1), hint('q2', 2)]);
+  });
+
+  it('starts at the first level', () => {
+    expect(nextHintLevel([], reviewQuestion)).toBe(1);
+  });
+
+  it('counts only hints for the same question', () => {
+    expect(
+      nextHintLevel([hint('q2', 1), hint('q1', 1)], reviewQuestion),
+    ).toBe(2);
+  });
+
+  it('stops after the third hint', () => {
+    expect(
+      nextHintLevel(
+        [hint('q2', 1), hint('q2', 2), hint('q2', 3)],
+        reviewQuestion,
+      ),
+    ).toBeNull();
+  });
+
+  it('stops after one hint for a clarification', () => {
+    expect(nextHintLevel([], question)).toBe(1);
+    expect(nextHintLevel([hint('q1', 1)], question)).toBeNull();
+  });
+
+  it('stops once a hint found the question resolved', () => {
+    expect(
+      nextHintLevel([hint('q2', 1, 'resolved')], reviewQuestion),
+    ).toBeNull();
   });
 });
 

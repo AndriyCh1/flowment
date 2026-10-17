@@ -19,6 +19,7 @@ import {
 import { ZodResponse } from 'nestjs-zod';
 import { ErrorResponseDto } from '../../shared/http';
 import {
+  CoachHintRequestDto,
   CoachNextDto,
   CoachReplyDto,
   CoachSessionDto,
@@ -36,8 +37,8 @@ export class CoachController {
   @ZodResponse({ type: CoachSessionDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
-  get(@Param('projectId', ParseUUIDPipe) projectId: string) {
-    return this.coach.get(projectId);
+  getCoachSession(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.coach.getSession(projectId);
   }
 
   @Put('intent')
@@ -45,11 +46,11 @@ export class CoachController {
   @ZodResponse({ type: CoachSessionDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
-  setIntent(
+  updateModelingIntent(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() body: UpdateModelingIntentDto,
   ) {
-    return this.coach.setIntent(projectId, body.modelingIntent);
+    return this.coach.updateModelingIntent(projectId, body.modelingIntent);
   }
 
   @Post('next')
@@ -59,11 +60,25 @@ export class CoachController {
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   @ApiConflictResponse({ type: ErrorResponseDto })
   @ApiServiceUnavailableResponse({ type: ErrorResponseDto })
-  next(
+  requestCoachResponse(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() body: CoachNextDto,
   ) {
-    return this.coach.next(projectId, body);
+    return this.coach.requestCoachResponse(projectId, body);
+  }
+
+  @Post('hint')
+  @ApiOperation({ operationId: 'requestCoachHint' })
+  @ZodResponse({ status: HttpStatus.OK, type: CoachSessionDto })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto })
+  @ApiConflictResponse({ type: ErrorResponseDto })
+  @ApiServiceUnavailableResponse({ type: ErrorResponseDto })
+  requestCoachHint(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() body: CoachHintRequestDto,
+  ) {
+    return this.coach.requestHint(projectId, body);
   }
 
   @Post('reply')
@@ -72,11 +87,11 @@ export class CoachController {
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   @ApiConflictResponse({ type: ErrorResponseDto })
-  reply(
+  replyToCoach(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() body: CoachReplyDto,
   ) {
-    return this.coach.reply(projectId, body);
+    return this.coach.replyToQuestion(projectId, body);
   }
 
   @Post('reset')
@@ -84,7 +99,7 @@ export class CoachController {
   @ZodResponse({ status: HttpStatus.OK, type: CoachSessionDto })
   @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
-  reset(@Param('projectId', ParseUUIDPipe) projectId: string) {
-    return this.coach.reset(projectId);
+  resetCoachSession(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.coach.resetConversation(projectId);
   }
 }

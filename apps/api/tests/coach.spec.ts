@@ -4,7 +4,12 @@ import {
   type ExerciseObjective,
   type SystemDesign,
 } from '@flowment/domain';
-import { coachSessions, projects } from '../src/infrastructure/database';
+import { asc } from 'drizzle-orm';
+import {
+  coachHintRequests,
+  coachSessions,
+  projects,
+} from '../src/infrastructure/database';
 import {
   COACH_AI_PROVIDER,
   DISCOVERY_QUESTION,
@@ -149,6 +154,9 @@ describe('Coach API', () => {
   const reply = <T = CoachSession>(projectId: string, body: unknown) =>
     coach<T>(projectId, 'POST', '/reply', body);
 
+  const requestHint = <T = CoachSession>(projectId: string, body: unknown) =>
+    coach<T>(projectId, 'POST', '/hint', body);
+
   const setIntent = (projectId: string, modelingIntent: string) =>
     coach(projectId, 'PUT', '/intent', { modelingIntent });
 
@@ -165,6 +173,11 @@ describe('Coach API', () => {
   const learnerTurns = (session: CoachSession) =>
     session.turns.filter(
       (turn): turn is CoachTurnOf<'learner'> => turn.role === 'learner',
+    );
+
+  const hintTurns = (session: CoachSession) =>
+    session.turns.filter(
+      (turn): turn is CoachTurnOf<'hint'> => turn.role === 'hint',
     );
 
   const lastOutput = (session: CoachSession) => {
@@ -805,6 +818,378 @@ describe('Coach API', () => {
       const { status } = await reply<ErrorBody>(MISSING_ID, {
         questionId: 'q',
         kind: 'skip',
+      });
+
+      expect(status).toBe(404);
+    });
+  });
+
+  describe('POST /api/projects/:projectId/coach/hint', () => {
+    const askReview = async () => {
+      const project = await createProject(uploadDesign);
+      ai.willRespond(
+        review('How does the Worker know which rows to validate?', ['s3']),
+      );
+      const asked = (await next(project.id)).body;
+      return { project, asked, questionId: activeQuestionId(asked) };
+    };
+
+    const hintRows = () =>
+      api.db
+        .select()
+        .from(coachHintRequests)
+        .orderBy(asc(coachHintRequests.createdAt), asc(coachHintRequests.level));
+
+    it('gives the first hint for the active question', async () => {
+      const { project, asked, questionId } = await askReview();
+      ai.willHint({
+        outcome: 'hint',
+        text: 'Look at what the Worker has right before step 3.',
+      });
+
+      const { status, body } = await requestHint(project.id, {
+        questionId,
+        scenarioId: 'upload',
+      });
+
+      expect(status).toBe(200);
+      expect(body.activeQuestionId).toBe(questionId);
+      expect(body.stage).toBe(asked.stage);
+      expect(hintTurns(body)).toEqual([
+        {
+          id: expect.any(String),
+          role: 'hint',
+          createdAt: expect.any(String),
+          questionId,
+          level: 1,
+          outcome: 'hint',
+          text: 'Look at what the Worker has right before step 3.',
+        },
+      ]);
+      expect(ai.hintInputs).toEqual([
+        {
+          context: expect.objectContaining({
+            designRevision: designRevision(uploadDesign),
+            scenarios: [
+              expect.objectContaining({ id: 'upload', selected: true }),
+              expect.objectContaining({ id: 'lookup', selected: false }),
+            ],
+          }),
+          question: {
+            purpose: 'review',
+            text: 'How does the Worker know which rows to validate?',
+            relatedStepIds: ['s3'],
+          },
+          level: 1,
+          previousHints: [],
+          objectives: [],
+        },
+      ]);
+    });
+
+    it('gives up to three hints, each with the ones before it', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint(
+        { outcome: 'hint', text: 'Look at step 3.' },
+        { outcome: 'hint', text: 'The Worker has a job id. What does it need?' },
+        { outcome: 'hint', text: 'Consider loading the stored job first.' },
+      );
+
+      await requestHint(project.id, { questionId });
+      await requestHint(project.id, { questionId });
+      const third = (await requestHint(project.id, { questionId })).body;
+      const fourth = await requestHint<ErrorBody>(project.id, { questionId });
+
+      expect(hintTurns(third).map(({ level }) => level)).toEqual([1, 2, 3]);
+      expect(
+        ai.hintInputs.map(({ level, previousHints }) => ({
+          level,
+          previousHints,
+        })),
+      ).toEqual([
+        { level: 1, previousHints: [] },
+        { level: 2, previousHints: ['Look at step 3.'] },
+        {
+          level: 3,
+          previousHints: [
+            'Look at step 3.',
+            'The Worker has a job id. What does it need?',
+          ],
+        },
+      ]);
+      expect(fourth.status).toBe(409);
+      expect(fourth.body.message).toBe(
+        'There are no more hints for this question',
+      );
+      expect(ai.hintInputs).toHaveLength(3);
+      expect(third.activeQuestionId).toBe(questionId);
+    });
+
+    it('uses the current design for every hint', async () => {
+      const project = await createProject(componentsOnlyDesign);
+      ai.willRespond(guide('What does the API receive first?'));
+      const asked = (await next(project.id)).body;
+      const questionId = activeQuestionId(asked);
+      ai.willHint(
+        { outcome: 'hint', text: 'Think about who sends the first request.' },
+        { outcome: 'hint', text: 'What does the Client hand to the API?' },
+      );
+
+      await requestHint(project.id, { questionId });
+      await api.request('PATCH', `/api/projects/${project.id}`, {
+        systemDesign: uploadDesign,
+      });
+      await requestHint(project.id, { questionId });
+
+      expect(ai.hintInputs[0].context.designRevision).toBe(
+        designRevision(componentsOnlyDesign),
+      );
+      expect(ai.hintInputs[1].context.designRevision).toBe(
+        designRevision(uploadDesign),
+      );
+      expect(ai.hintInputs[1].context.components).toHaveLength(3);
+    });
+
+    it('drops step references that are no longer in the design', async () => {
+      const { project, questionId } = await askReview();
+      await api.request('PATCH', `/api/projects/${project.id}`, {
+        systemDesign: componentsOnlyDesign,
+      });
+      ai.willHint({ outcome: 'hint', text: 'Look at the API.' });
+
+      await requestHint(project.id, { questionId });
+
+      expect(ai.hintInputs[0].question).toEqual({
+        purpose: 'review',
+        text: 'How does the Worker know which rows to validate?',
+      });
+    });
+
+    it('closes the question when the issue is already resolved', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint({
+        outcome: 'resolved',
+        text: 'Step 2 now gives the Worker the rows, so this is settled.',
+      });
+
+      const { status, body } = await requestHint(project.id, { questionId });
+      const again = await requestHint<ErrorBody>(project.id, { questionId });
+      const late = await reply<ErrorBody>(project.id, {
+        questionId,
+        kind: 'answer',
+        text: 'From the upload',
+      });
+
+      expect(status).toBe(200);
+      expect(body.activeQuestionId).toBeNull();
+      expect(hintTurns(body)).toEqual([
+        expect.objectContaining({
+          level: 1,
+          outcome: 'resolved',
+          text: 'Step 2 now gives the Worker the rows, so this is settled.',
+        }),
+      ]);
+      expect(again.status).toBe(409);
+      expect(late.status).toBe(409);
+    });
+
+    it('gives one hint for a clarification question', async () => {
+      const project = await createProject();
+      await setIntent(project.id, 'A notification system');
+      ai.willRespond(clarify('Are you focusing on sending or receiving?'));
+      const asked = (await next(project.id)).body;
+      const questionId = activeQuestionId(asked);
+      ai.willHint({
+        outcome: 'hint',
+        text: 'Sending covers what happens before a message leaves; receiving covers delivery to a user. For example: "an order confirmation is sent" or "a user opens a push notification".',
+      });
+
+      const first = await requestHint(project.id, { questionId });
+      const second = await requestHint<ErrorBody>(project.id, { questionId });
+
+      expect(first.status).toBe(200);
+      expect(ai.hintInputs[0]).toMatchObject({
+        question: { purpose: 'clarify' },
+        level: 1,
+      });
+      expect(second.status).toBe(409);
+      expect(ai.hintInputs).toHaveLength(1);
+    });
+
+    it('can help with the discovery question', async () => {
+      const project = await createProject();
+      const asked = (await next(project.id)).body;
+      ai.willHint({
+        outcome: 'hint',
+        text: 'Pick one thing a system does, such as accepting an upload.',
+      });
+
+      const { status } = await requestHint(project.id, {
+        questionId: activeQuestionId(asked),
+      });
+
+      expect(status).toBe(200);
+      expect(ai.hintInputs[0]).toMatchObject({
+        question: { purpose: 'discover', text: DISCOVERY_QUESTION },
+        context: { modelingIntent: null, components: [] },
+      });
+    });
+
+    it('passes the objectives in an exercise', async () => {
+      const project = await createProject(uploadDesign);
+      await startExercise(project.id, [objective]);
+      ai.willEvaluate({ status: 'unsatisfied', evidence: [], gap: 'A gap' });
+      ai.willRespond(review('What does the Worker know at step 3?', ['s3']));
+      const asked = (await next(project.id)).body;
+      ai.willHint({ outcome: 'hint', text: 'Look at step 3.' });
+
+      await requestHint(project.id, { questionId: activeQuestionId(asked) });
+
+      expect(ai.hintInputs[0].objectives).toEqual([objective]);
+    });
+
+    it('lets the next coach response see the hints', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint({ outcome: 'hint', text: 'Look at step 3.' });
+      ai.willRespond(guide('What does the Worker do next?'));
+      await requestHint(project.id, { questionId });
+      await reply(project.id, {
+        questionId,
+        kind: 'answer',
+        text: 'It reads the file',
+      });
+
+      await next(project.id);
+
+      expect(ai.questionInputs[1].context.conversation).toEqual([
+        {
+          role: 'coach',
+          kind: 'question',
+          purpose: 'review',
+          text: 'How does the Worker know which rows to validate?',
+        },
+        {
+          role: 'coach',
+          kind: 'hint',
+          level: 1,
+          outcome: 'hint',
+          text: 'Look at step 3.',
+        },
+        { role: 'learner', kind: 'answer', text: 'It reads the file' },
+      ]);
+    });
+
+    it('records each hint for telemetry and keeps the record after a reset', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint(
+        { outcome: 'hint', text: 'Look at step 3.' },
+        { outcome: 'resolved', text: 'Step 2 settles it.' },
+      );
+
+      await requestHint(project.id, { questionId });
+      await requestHint(project.id, { questionId });
+      await coach(project.id, 'POST', '/reset');
+
+      expect(await hintRows()).toEqual([
+        {
+          id: expect.any(String),
+          projectId: project.id,
+          questionId,
+          questionPurpose: 'review',
+          level: 1,
+          outcome: 'hint',
+          designRevision: designRevision(uploadDesign),
+          createdAt: expect.any(Date),
+        },
+        {
+          id: expect.any(String),
+          projectId: project.id,
+          questionId,
+          questionPurpose: 'review',
+          level: 2,
+          outcome: 'resolved',
+          designRevision: designRevision(uploadDesign),
+          createdAt: expect.any(Date),
+        },
+      ]);
+    });
+
+    it('keeps the session and records nothing when the provider fails', async () => {
+      const { project, asked, questionId } = await askReview();
+      ai.willHint(new Error('upstream timeout'));
+
+      const failed = await requestHint<ErrorBody>(project.id, { questionId });
+      const { body } = await coach(project.id, 'GET');
+
+      expect(failed.status).toBe(503);
+      expect(body).toEqual(asked);
+      expect(await hintRows()).toEqual([]);
+    });
+
+    it('rejects hint output that does not match the contract', async () => {
+      const { project, asked, questionId } = await askReview();
+      ai.willHint({ outcome: 'answer', text: 'Add a Job DB lookup.' });
+
+      const { status } = await requestHint<ErrorBody>(project.id, {
+        questionId,
+      });
+      const { body } = await coach(project.id, 'GET');
+
+      expect(status).toBe(503);
+      expect(body).toEqual(asked);
+    });
+
+    it('accepts only one of two simultaneous hint requests', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint(
+        { outcome: 'hint', text: 'Look at step 3.' },
+        { outcome: 'hint', text: 'Look at the Worker.' },
+      );
+
+      const results = await Promise.all([
+        requestHint<unknown>(project.id, { questionId }),
+        requestHint<unknown>(project.id, { questionId }),
+      ]);
+      const { body } = await coach(project.id, 'GET');
+
+      expect(results.map(({ status }) => status).sort()).toEqual([200, 409]);
+      expect(hintTurns(body)).toHaveLength(1);
+      expect(await hintRows()).toHaveLength(1);
+    });
+
+    it('rejects a hint for a question that is not active', async () => {
+      const { project, questionId } = await askReview();
+      await reply(project.id, { questionId, kind: 'skip' });
+
+      const answered = await requestHint<ErrorBody>(project.id, {
+        questionId,
+      });
+      const madeUp = await requestHint<ErrorBody>(project.id, {
+        questionId: 'made-up',
+      });
+
+      expect(answered.status).toBe(409);
+      expect(answered.body.message).toBe('That question is no longer active');
+      expect(madeUp.status).toBe(409);
+      expect(ai.hintInputs).toHaveLength(0);
+    });
+
+    it('never changes the system design', async () => {
+      const { project, questionId } = await askReview();
+      ai.willHint(
+        { outcome: 'hint', text: 'Look at step 3.' },
+        { outcome: 'resolved', text: 'Step 2 settles it.' },
+      );
+
+      await requestHint(project.id, { questionId });
+      await requestHint(project.id, { questionId });
+
+      expect(await getProject(project.id)).toEqual(project);
+    });
+
+    it('returns 404 for an unknown project', async () => {
+      const { status } = await requestHint<ErrorBody>(MISSING_ID, {
+        questionId: 'q',
       });
 
       expect(status).toBe(404);

@@ -1,4 +1,8 @@
-import { designRevision, type SystemDesign } from '@flowment/domain';
+import {
+  designRevision,
+  findCoachQuestion,
+  type SystemDesign,
+} from '@flowment/domain';
 import type { CoachSessionDto } from '../../api';
 import { Button } from '../../components/ui/button';
 import { ExerciseObjectives } from './brief/exercise-objectives';
@@ -10,6 +14,7 @@ import {
   CoachReplyForm,
   type CoachReply,
 } from './conversation/coach-reply-form';
+import { HintRequest } from './conversation/hint-request';
 
 type CoachSessionViewProps = {
   session: CoachSessionDto;
@@ -19,6 +24,7 @@ type CoachSessionViewProps = {
   busy: boolean;
   onStart: (modelingIntent: string) => void;
   onAsk: () => void;
+  onHint: (questionId: string) => void;
   onReply: (questionId: string, reply: CoachReply) => void;
   onReset: () => void;
 };
@@ -31,6 +37,7 @@ export function CoachSessionView({
   busy,
   onStart,
   onAsk,
+  onHint,
   onReply,
   onReset,
 }: CoachSessionViewProps) {
@@ -41,6 +48,9 @@ export function CoachSessionView({
     return <CoachStart disabled={blocked} onStart={onStart} />;
   }
 
+  const activeQuestion = activeQuestionId
+    ? findCoachQuestion(turns, activeQuestionId)
+    : undefined;
   const designChanged =
     session.designRevision !== null &&
     session.designRevision !== designRevision(design);
@@ -68,6 +78,14 @@ export function CoachSessionView({
                 Ask again
               </Button>
             </div>
+          )}
+          {activeQuestion && (
+            <HintRequest
+              question={activeQuestion}
+              turns={turns}
+              disabled={blocked}
+              onHint={() => onHint(activeQuestion.questionId)}
+            />
           )}
           <CoachReplyForm
             key={activeQuestionId}

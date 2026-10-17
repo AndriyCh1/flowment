@@ -9,6 +9,7 @@ export {
   listProjects,
   type Options,
   replyToCoach,
+  requestCoachHint,
   requestCoachResponse,
   resetCoachSession,
   updateModelingIntent,
@@ -16,6 +17,7 @@ export {
 } from './sdk.gen.js';
 export type {
   ClientOptions,
+  CoachHintRequestDto,
   CoachNextDto,
   CoachReplyDto,
   CoachSessionDto,
@@ -58,6 +60,11 @@ export type {
   ReplyToCoachErrors,
   ReplyToCoachResponse,
   ReplyToCoachResponses,
+  RequestCoachHintData,
+  RequestCoachHintError,
+  RequestCoachHintErrors,
+  RequestCoachHintResponse,
+  RequestCoachHintResponses,
   RequestCoachResponseData,
   RequestCoachResponseError,
   RequestCoachResponseErrors,

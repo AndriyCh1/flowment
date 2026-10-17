@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getCoachSession,
   replyToCoach,
+  requestCoachHint,
   requestCoachResponse,
   resetCoachSession,
   updateModelingIntent,
+  type CoachHintRequestDto,
   type CoachNextDto,
   type CoachReplyDto,
   type CoachSessionDto,
@@ -61,6 +63,17 @@ export function useSaveModelingIntent(projectId: string) {
 export function useRequestCoachResponse(projectId: string) {
   return useCoachMutation(projectId, async (body: CoachNextDto) => {
     const { data } = await requestCoachResponse({
+      path: { projectId },
+      body,
+      throwOnError: true,
+    });
+    return data;
+  });
+}
+
+export function useRequestCoachHint(projectId: string) {
+  return useCoachMutation(projectId, async (body: CoachHintRequestDto) => {
+    const { data } = await requestCoachHint({
       path: { projectId },
       body,
       throwOnError: true,

@@ -1,6 +1,9 @@
 import {
   CoachActionSchema,
+  HintOutcomeSchema,
+  type CoachQuestion,
   type ExerciseObjective,
+  type HintLevel,
   type ObjectiveEvaluation,
 } from '@flowment/domain';
 import { z } from 'zod';
@@ -26,8 +29,14 @@ export const CoachDraftSchema = z.discriminatedUnion('type', [
   CoachActionDraftSchema,
 ]);
 
+export const HintDraftSchema = z.object({
+  outcome: HintOutcomeSchema,
+  text: z.string().trim().min(1),
+});
+
 export type CoachQuestionDraft = z.infer<typeof CoachQuestionDraftSchema>;
 export type CoachDraft = z.infer<typeof CoachDraftSchema>;
+export type HintDraft = z.infer<typeof HintDraftSchema>;
 
 export type CoachFocus =
   | { kind: 'open' }
@@ -46,8 +55,17 @@ export type ObjectiveEvaluationInput = {
   objective: ExerciseObjective;
 };
 
+export type HintInput = {
+  context: CoachContext;
+  question: Pick<CoachQuestion, 'purpose' | 'text' | 'relatedStepIds'>;
+  level: HintLevel;
+  previousHints: string[];
+  objectives: ExerciseObjective[];
+};
+
 export interface CoachAiProvider {
   generateCoachQuestion(input: CoachInput): Promise<CoachDraft>;
+  generateHint(input: HintInput): Promise<HintDraft>;
   evaluateObjective(
     input: ObjectiveEvaluationInput,
   ): Promise<ObjectiveEvaluation>;
