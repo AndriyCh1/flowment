@@ -1,28 +1,26 @@
 import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
-export type DesignTab = 'scenarios' | 'architecture';
-
-const tabs: { id: DesignTab; label: string }[] = [
-  { id: 'scenarios', label: 'Scenarios' },
-  { id: 'architecture', label: 'Architecture' },
-];
-
-type DesignTabsProps = {
-  activeTab: DesignTab;
-  onTabChange: (tab: DesignTab) => void;
-  scenarios: ReactNode;
-  architecture: ReactNode;
+export type PanelTab<T extends string> = {
+  id: T;
+  label: string;
+  content: ReactNode;
 };
 
-export function DesignTabs({
+type TabbedPanelProps<T extends string> = {
+  label: string;
+  tabs: PanelTab<T>[];
+  activeTab: T;
+  onTabChange: (tab: T) => void;
+};
+
+export function TabbedPanel<T extends string>({
+  label,
+  tabs,
   activeTab,
   onTabChange,
-  scenarios,
-  architecture,
-}: DesignTabsProps) {
+}: TabbedPanelProps<T>) {
   const baseId = useId();
-  const tabButtons = useRef(new Map<DesignTab, HTMLButtonElement>());
-  const content: Record<DesignTab, ReactNode> = { scenarios, architecture };
+  const tabButtons = useRef(new Map<T, HTMLButtonElement>());
 
   const selectAdjacentTab = (event: KeyboardEvent, index: number) => {
     const step =
@@ -38,15 +36,15 @@ export function DesignTabs({
 
   return (
     <section
-      aria-label="System design"
+      aria-label={label}
       className="flex h-full min-h-0 flex-col rounded-lg border border-zinc-200 bg-white"
     >
       <div
         role="tablist"
-        aria-label="System design views"
+        aria-label={`${label} views`}
         className="flex gap-1 border-b border-zinc-200 px-2"
       >
-        {tabs.map(({ id, label }, index) => {
+        {tabs.map(({ id, label: tabLabel }, index) => {
           const active = id === activeTab;
           return (
             <button
@@ -72,12 +70,12 @@ export function DesignTabs({
                   : 'border-transparent text-zinc-500 hover:text-zinc-800'
               }`}
             >
-              {label}
+              {tabLabel}
             </button>
           );
         })}
       </div>
-      {tabs.map(({ id }) => (
+      {tabs.map(({ id, content }) => (
         <div
           key={id}
           role="tabpanel"
@@ -86,7 +84,7 @@ export function DesignTabs({
           hidden={id !== activeTab}
           className="min-h-0 flex-1 overflow-auto p-4"
         >
-          {content[id]}
+          {content}
         </div>
       ))}
     </section>

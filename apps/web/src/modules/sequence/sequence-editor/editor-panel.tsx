@@ -10,10 +10,7 @@ export function EditorPanel({ title, actions, children }: EditorPanelProps) {
   const headingId = useId();
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className="sticky bottom-0 z-10 max-h-[60vh] space-y-3 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-4 shadow-lg"
-    >
+    <section aria-labelledby={headingId} className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id={headingId} className="text-sm font-semibold">
           {title}

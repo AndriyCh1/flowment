@@ -2,6 +2,7 @@ import { SystemDesignSchema, type SystemDesign } from '@flowment/domain';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ProjectDto } from '../../api';
+import { TabbedPanel } from '../../components/tabbed-panel';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
 import { formatTimestamp } from '../../shared/format-timestamp';
@@ -11,12 +12,13 @@ import { ComponentPanel } from '../design-components';
 import { ExerciseBrief } from '../exercises';
 import { ReviewPanel } from '../reviews';
 import { ScenarioWorkspace } from '../scenarios';
-import { DesignTabs, type DesignTab } from './design-tabs';
 import { ProjectNameForm } from './project-name-form';
 import { useSaveSystemDesign } from './project-queries';
 // import { SystemDesignEditor } from './system-design-editor';
 // import { formatSystemDesign } from './system-design-json';
 import { WorkspaceLayout } from './workspace-layout/workspace-layout';
+
+type DesignTab = 'scenarios' | 'architecture';
 
 type ProjectWorkspaceProps = { project: ProjectDto };
 
@@ -87,23 +89,34 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <ComponentPanel design={design} onDesignChange={changeDesign} />
         }
         design={
-          <DesignTabs
+          <TabbedPanel
+            label="System design"
             activeTab={designTab}
             onTabChange={setDesignTab}
-            scenarios={
-              <ScenarioWorkspace
-                design={design}
-                activeScenarioId={activeScenario?.id}
-                onActiveScenarioChange={setScenarioId}
-                onDesignChange={changeDesign}
-              />
-            }
-            architecture={
-              <ArchitectureView
-                design={design}
-                onSelectScenario={openScenario}
-              />
-            }
+            tabs={[
+              {
+                id: 'scenarios',
+                label: 'Scenarios',
+                content: (
+                  <ScenarioWorkspace
+                    design={design}
+                    activeScenarioId={activeScenario?.id}
+                    onActiveScenarioChange={setScenarioId}
+                    onDesignChange={changeDesign}
+                  />
+                ),
+              },
+              {
+                id: 'architecture',
+                label: 'Architecture',
+                content: (
+                  <ArchitectureView
+                    design={design}
+                    onSelectScenario={openScenario}
+                  />
+                ),
+              },
+            ]}
           />
         }
         coach={
