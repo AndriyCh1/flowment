@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { Page } from '../../components/page';
 import { Button } from '../../components/ui/button';
 import { ErrorMessage } from '../../components/ui/error-message';
+import { IconButton } from '../../components/ui/icon-button';
 import { Input } from '../../components/ui/input';
 import { errorMessage } from '../../shared/api-error';
 import { formatTimestamp } from '../../shared/format-timestamp';
@@ -58,7 +60,11 @@ function CreateProjectForm() {
           placeholder="New project name"
           {...register('name')}
         />
-        <Button type="submit" disabled={!isValid || createProject.isPending}>
+        <Button
+          type="submit"
+          icon={Plus}
+          disabled={!isValid || createProject.isPending}
+        >
           Create project
         </Button>
       </div>
@@ -120,20 +126,18 @@ function ProjectList() {
             {offset + 1}–{offset + items.length} of {total}
           </span>
           <div className="flex gap-2">
-            <Button
-              variant="secondary"
+            <IconButton
+              label="Previous page"
+              icon={ChevronLeft}
               disabled={offset === 0}
               onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
+            />
+            <IconButton
+              label="Next page"
+              icon={ChevronRight}
               disabled={offset + PAGE_SIZE >= total}
               onClick={() => setOffset(offset + PAGE_SIZE)}
-            >
-              Next
-            </Button>
+            />
           </div>
         </nav>
       )}

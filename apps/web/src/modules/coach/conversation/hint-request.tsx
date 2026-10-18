@@ -4,6 +4,7 @@ import {
   type CoachQuestion,
   type CoachTurn,
 } from '@flowment/domain';
+import { Lightbulb } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
 type HintRequestProps = {
@@ -38,7 +39,12 @@ export function HintRequest({
         : `Another hint (${level} of ${limit})`;
 
   return (
-    <Button variant="secondary" disabled={disabled} onClick={onHint}>
+    <Button
+      variant="secondary"
+      icon={Lightbulb}
+      disabled={disabled}
+      onClick={onHint}
+    >
       {label}
     </Button>
   );

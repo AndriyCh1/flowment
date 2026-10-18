@@ -3,6 +3,7 @@ import {
   findCoachQuestion,
   type SystemDesign,
 } from '@flowment/domain';
+import { MessageCircle, RefreshCw } from 'lucide-react';
 import type { CoachSessionDto } from '../../api';
 import { Button } from '../../components/ui/button';
 import { ExerciseObjectives } from './brief/exercise-objectives';
@@ -78,7 +79,12 @@ export function CoachSessionView({
           {designChanged && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
               <p>You've changed the design since this question was asked.</p>
-              <Button variant="secondary" disabled={blocked} onClick={onAsk}>
+              <Button
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={blocked}
+                onClick={onAsk}
+              >
                 Ask again
               </Button>
             </div>
@@ -107,7 +113,7 @@ export function CoachSessionView({
           />
         </div>
       ) : (
-        <Button disabled={blocked} onClick={onAsk}>
+        <Button icon={MessageCircle} disabled={blocked} onClick={onAsk}>
           {askLabel}
         </Button>
       )}

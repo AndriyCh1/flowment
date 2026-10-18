@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Check } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
-import { Button } from '../../components/ui/button';
 import { ErrorMessage } from '../../components/ui/error-message';
+import { IconButton } from '../../components/ui/icon-button';
 import { Input } from '../../components/ui/input';
 import { errorMessage } from '../../shared/api-error';
 import { ProjectNameFormSchema } from './project-form-schemas';
@@ -27,17 +28,21 @@ export function ProjectNameForm({ projectId, name }: ProjectNameFormProps) {
   const submit = handleSubmit((values) => updateProject.mutate(values));
 
   return (
-    <form onSubmit={submit} className="mt-4 space-y-2">
+    <form onSubmit={submit} className="space-y-2">
       <div className="flex gap-2">
         <Input
           label="Project name"
-          className="text-xl font-semibold"
+          className="py-1 text-base font-semibold"
           {...register('name')}
         />
         {changed && (
-          <Button type="submit" disabled={updateProject.isPending}>
-            Rename
-          </Button>
+          <IconButton
+            type="submit"
+            label="Rename project"
+            icon={Check}
+            variant="primary"
+            disabled={updateProject.isPending}
+          />
         )}
       </div>
       {updateProject.isError && (

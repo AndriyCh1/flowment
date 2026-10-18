@@ -3,6 +3,7 @@ import {
   isPossibleAnswerAvailable,
   type CoachTurn,
 } from '@flowment/domain';
+import { Eye } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
 type PossibleAnswerRequestProps = {
@@ -30,7 +31,12 @@ export function PossibleAnswerRequest({
   }
 
   return (
-    <Button variant="secondary" disabled={disabled} onClick={onRequest}>
+    <Button
+      variant="secondary"
+      icon={Eye}
+      disabled={disabled}
+      onClick={onRequest}
+    >
       {shown ? 'Show an updated answer' : 'Show one possible answer'}
     </Button>
   );

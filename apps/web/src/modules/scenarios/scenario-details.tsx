@@ -1,7 +1,8 @@
 import type { SequenceScenario } from '@flowment/domain';
+import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { useId, useState } from 'react';
 import { InlineConfirmation } from '../../components/inline-confirmation';
-import { Button } from '../../components/ui/button';
+import { IconButton } from '../../components/ui/icon-button';
 import { scenarioTitle } from '../../shared/design-labels';
 import { ScenarioForm } from './scenario-form';
 import { applyScenarioForm } from './scenario-form-schemas';
@@ -40,23 +41,24 @@ export function ScenarioDetails({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
+          <IconButton
+            label="Edit scenario details"
+            icon={Pencil}
             aria-expanded={mode === 'edit'}
             onClick={() => setMode(mode === 'edit' ? 'view' : 'edit')}
-          >
-            Edit details
-          </Button>
-          <Button variant="secondary" onClick={onDuplicate}>
-            Duplicate
-          </Button>
-          <Button
+          />
+          <IconButton
+            label="Duplicate scenario"
+            icon={Copy}
+            onClick={onDuplicate}
+          />
+          <IconButton
+            label="Delete scenario"
+            icon={Trash2}
             variant="danger"
             disabled={mode === 'delete'}
             onClick={() => (stepCount === 0 ? onDelete() : setMode('delete'))}
-          >
-            Delete
-          </Button>
+          />
         </div>
       </div>
       {mode === 'edit' && (

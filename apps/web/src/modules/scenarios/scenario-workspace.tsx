@@ -67,10 +67,7 @@ export function ScenarioWorkspace({
   };
 
   return (
-    <section aria-labelledby="scenarios-heading" className="min-w-0 space-y-3">
-      <h2 id="scenarios-heading" className="text-lg font-semibold">
-        Scenarios
-      </h2>
+    <div className="min-w-0 space-y-3">
       <ScenarioTabs
         scenarios={scenarios}
         activeId={scenario?.id}
@@ -106,6 +103,6 @@ export function ScenarioWorkspace({
       ) : (
         !adding && <p className="text-sm text-zinc-500">No scenarios yet.</p>
       )}
-    </section>
+    </div>
   );
 }

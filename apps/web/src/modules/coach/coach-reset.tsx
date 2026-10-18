@@ -1,6 +1,7 @@
+import { RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { InlineConfirmation } from '../../components/inline-confirmation';
-import { Button } from '../../components/ui/button';
+import { IconButton } from '../../components/ui/icon-button';
 
 type CoachResetProps = {
   disabled: boolean;
@@ -12,13 +13,12 @@ export function CoachReset({ disabled, onReset }: CoachResetProps) {
 
   if (!confirming) {
     return (
-      <Button
-        variant="secondary"
+      <IconButton
+        label="Reset conversation"
+        icon={RotateCcw}
         disabled={disabled}
         onClick={() => setConfirming(true)}
-      >
-        Reset conversation
-      </Button>
+      />
     );
   }
 

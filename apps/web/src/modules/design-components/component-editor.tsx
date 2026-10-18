@@ -1,6 +1,7 @@
 import type { Component, ComponentUsage } from '@flowment/domain';
+import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button';
+import { IconButton } from '../../components/ui/icon-button';
 import { participantName } from '../../shared/design-labels';
 import { ComponentDeleteConfirmation } from './component-delete-confirmation';
 import { ComponentForm } from './component-form';
@@ -32,15 +33,15 @@ export function ComponentEditor({
         <h3 className="text-sm font-semibold wrap-anywhere">
           Edit {participantName(component)}
         </h3>
-        <Button
+        <IconButton
+          label="Delete component"
+          icon={Trash2}
           variant="danger"
           disabled={confirmingDelete}
           onClick={() =>
             usages.length === 0 ? onDelete() : setConfirmingDelete(true)
           }
-        >
-          Delete
-        </Button>
+        />
       </div>
       {confirmingDelete ? (
         <ComponentDeleteConfirmation

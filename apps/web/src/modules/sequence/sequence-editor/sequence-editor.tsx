@@ -8,6 +8,7 @@ import {
   type SequenceScenario,
   type SequenceStep,
 } from '@flowment/domain';
+import { MoveRight, StickyNote } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { SequenceDiagram } from '../sequence-diagram';
@@ -65,6 +66,7 @@ export function SequenceEditor({
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="secondary"
+          icon={MoveRight}
           disabled={components.length === 0}
           onClick={() => startDraft('interaction')}
         >
@@ -72,6 +74,7 @@ export function SequenceEditor({
         </Button>
         <Button
           variant="secondary"
+          icon={StickyNote}
           disabled={components.length === 0}
           onClick={() => startDraft('note')}
         >

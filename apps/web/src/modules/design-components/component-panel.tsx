@@ -6,6 +6,7 @@ import {
   replaceComponent,
   type SystemDesign,
 } from '@flowment/domain';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { ComponentEditor } from './component-editor';
@@ -59,18 +60,15 @@ export function ComponentPanel({
   };
 
   return (
-    <section
-      aria-labelledby="components-heading"
-      className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="components-heading" className="text-lg font-semibold">
-          Components
-        </h2>
-        <Button variant="secondary" disabled={adding} onClick={startAdding}>
-          Add component
-        </Button>
-      </div>
+    <div className="space-y-3">
+      <Button
+        variant="secondary"
+        icon={Plus}
+        disabled={adding}
+        onClick={startAdding}
+      >
+        Add component
+      </Button>
       {components.length === 0 ? (
         <p className="text-sm text-zinc-500">No components yet.</p>
       ) : (
@@ -103,6 +101,6 @@ export function ComponentPanel({
           onDelete={() => remove(selected.id)}
         />
       )}
-    </section>
+    </div>
   );
 }

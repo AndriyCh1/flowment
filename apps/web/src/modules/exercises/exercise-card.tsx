@@ -1,3 +1,4 @@
+import { Play } from 'lucide-react';
 import type { ExerciseDto } from '../../api';
 import { Button } from '../../components/ui/button';
 import {
@@ -37,7 +38,7 @@ export function ExerciseCard({
         </p>
       </div>
       <p className="text-sm">{exercise.prompt}</p>
-      <Button disabled={disabled} onClick={onStart}>
+      <Button icon={Play} disabled={disabled} onClick={onStart}>
         Start exercise
       </Button>
     </article>

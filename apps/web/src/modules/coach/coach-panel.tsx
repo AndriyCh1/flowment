@@ -83,17 +83,12 @@ export function CoachPanel({
   ].find((mutation) => mutation.isError)?.error;
 
   return (
-    <section aria-labelledby="coach-heading" className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="coach-heading" className="text-lg font-semibold">
-          Coach
-        </h2>
-        {session.data && session.data.turns.length > 0 && (
-          <p className="text-xs text-zinc-500">
-            {stageLabels[session.data.stage]}
-          </p>
-        )}
-      </div>
+    <div className="space-y-3">
+      {session.data && session.data.turns.length > 0 && (
+        <p className="text-xs text-zinc-500">
+          {stageLabels[session.data.stage]}
+        </p>
+      )}
       {session.isPending ? (
         <p className="text-sm text-zinc-500">Loading coach…</p>
       ) : session.isError ? (
@@ -119,6 +114,6 @@ export function CoachPanel({
         </p>
       )}
       {error && <ErrorMessage>{errorMessage(error)}</ErrorMessage>}
-    </section>
+    </div>
   );
 }

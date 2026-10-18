@@ -1,4 +1,5 @@
 import { designRevision, type SystemDesign } from '@flowment/domain';
+import { ClipboardCheck } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
@@ -29,16 +30,11 @@ export function ReviewPanel({
   );
 
   return (
-    <section aria-labelledby="review-heading" className="space-y-3">
-      <div className="space-y-1">
-        <h2 id="review-heading" className="text-lg font-semibold">
-          Review
-        </h2>
-        <p className="text-sm text-zinc-500">
-          Submit at any point for direct feedback on your work. You can keep
-          working and submit again.
-        </p>
-      </div>
+    <div className="space-y-3">
+      <p className="text-sm text-zinc-500">
+        Submit at any point for direct feedback on your work. You can keep
+        working and submit again.
+      </p>
       {reviews.isPending ? (
         <p className="text-sm text-zinc-500">Loading reviews…</p>
       ) : reviews.isError ? (
@@ -55,6 +51,7 @@ export function ReviewPanel({
             </p>
           ) : (
             <Button
+              icon={ClipboardCheck}
               disabled={submit.isPending || designSaving}
               onClick={() => submit.mutate()}
             >
@@ -93,6 +90,6 @@ export function ReviewPanel({
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }

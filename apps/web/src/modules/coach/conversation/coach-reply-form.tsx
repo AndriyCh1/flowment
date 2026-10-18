@@ -1,5 +1,6 @@
 import type { LearnerReplyKind } from '@flowment/domain';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Send } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../../../components/ui/button';
 import { Field } from '../../../components/ui/field';
@@ -37,7 +38,7 @@ export function CoachReplyForm({ disabled, onReply }: CoachReplyFormProps) {
         <Textarea label={LABEL} rows={3} {...register('text')} />
       </Field>
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={disabled}>
+        <Button type="submit" icon={Send} disabled={disabled}>
           Send answer
         </Button>
         <Button

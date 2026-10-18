@@ -23,15 +23,12 @@ export function ExerciseBrief({ exerciseId }: ExerciseBriefProps) {
   const { mode, difficulty, prompt } = exercise.data;
 
   return (
-    <section
-      aria-label="Exercise"
-      className="space-y-1 rounded-lg border border-zinc-200 bg-zinc-50 p-4"
-    >
+    <div className="space-y-1">
       <p className="text-xs font-medium text-zinc-500">
         {trainingModeLabels[mode]} exercise · {difficultyLabel(difficulty)}
       </p>
       <p className="text-sm">{prompt}</p>
       <p className="text-xs text-zinc-500">{trainingModeDescriptions[mode]}</p>
-    </section>
+    </div>
   );
 }

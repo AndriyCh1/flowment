@@ -1,5 +1,6 @@
 import type { SequenceScenario } from '@flowment/domain';
-import { Button } from '../../components/ui/button';
+import { Plus } from 'lucide-react';
+import { IconButton } from '../../components/ui/icon-button';
 import { scenarioTitle } from '../../shared/design-labels';
 
 type ScenarioTabsProps = {
@@ -35,14 +36,13 @@ export function ScenarioTabs({
           ))}
         </fieldset>
       )}
-      <Button
-        variant="secondary"
+      <IconButton
+        label="Add scenario"
+        icon={Plus}
         className="mb-2"
         disabled={adding}
         onClick={onAdd}
-      >
-        Add scenario
-      </Button>
+      />
     </div>
   );
 }

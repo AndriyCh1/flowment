@@ -1,5 +1,6 @@
 import { SystemDesignSchema, type SystemDesign } from '@flowment/domain';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { ProjectDto } from '../../api';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
@@ -10,10 +11,12 @@ import { ComponentPanel } from '../design-components';
 import { ExerciseBrief } from '../exercises';
 import { ReviewPanel } from '../reviews';
 import { ScenarioWorkspace } from '../scenarios';
+import { DesignTabs, type DesignTab } from './design-tabs';
 import { ProjectNameForm } from './project-name-form';
 import { useSaveSystemDesign } from './project-queries';
-import { SystemDesignEditor } from './system-design-editor';
-import { formatSystemDesign } from './system-design-json';
+// import { SystemDesignEditor } from './system-design-editor';
+// import { formatSystemDesign } from './system-design-json';
+import { WorkspaceLayout } from './workspace-layout/workspace-layout';
 
 type ProjectWorkspaceProps = { project: ProjectDto };
 
@@ -22,6 +25,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const design = project.systemDesign;
   const [rejectedChange, setRejectedChange] = useState(false);
   const [scenarioId, setScenarioId] = useState<string | null>(null);
+  const [designTab, setDesignTab] = useState<DesignTab>('scenarios');
   const activeScenario =
     design.scenarios.find(({ id }) => id === scenarioId) ?? design.scenarios[0];
 
@@ -33,66 +37,92 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
     }
   };
 
+  const openScenario = (id: string) => {
+    setScenarioId(id);
+    setDesignTab('scenarios');
+  };
+
   return (
     <>
-      <ProjectNameForm
-        key={project.name}
-        projectId={project.id}
-        name={project.name}
-      />
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-zinc-500">
-        <p>
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 pb-2">
+        <Link to="/projects" className="text-sm text-zinc-600 hover:underline">
+          ← Projects
+        </Link>
+        <div className="w-full max-w-md min-w-48 flex-1">
+          <ProjectNameForm
+            key={project.name}
+            projectId={project.id}
+            name={project.name}
+          />
+        </div>
+        <p className="text-xs text-zinc-500">
           Created {formatTimestamp(project.createdAt)} · Updated{' '}
           {formatTimestamp(project.updatedAt)}
         </p>
-        <p aria-live="polite">{saveDesign.isPending ? 'Saving…' : ''}</p>
-      </div>
-      {project.exerciseId && (
-        <div className="mt-4">
-          <ExerciseBrief exerciseId={project.exerciseId} />
-        </div>
-      )}
+        <p aria-live="polite" className="text-xs text-zinc-500">
+          {saveDesign.isPending ? 'Saving…' : ''}
+        </p>
+      </header>
       {rejectedChange && (
-        <div className="mt-3">
+        <div className="pb-2">
           <ErrorMessage>
             That change would leave the design invalid, so it wasn't applied.
           </ErrorMessage>
         </div>
       )}
       {saveDesign.isError && (
-        <div className="mt-3">
+        <div className="pb-2">
           <ErrorMessage>
             Your last change wasn't saved: {errorMessage(saveDesign.error)}
           </ErrorMessage>
         </div>
       )}
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-        <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <WorkspaceLayout
+        exercise={
+          project.exerciseId ? (
+            <ExerciseBrief exerciseId={project.exerciseId} />
+          ) : null
+        }
+        components={
           <ComponentPanel design={design} onDesignChange={changeDesign} />
-        </aside>
-        <div className="min-w-0 space-y-8">
-          <ScenarioWorkspace
-            design={design}
-            activeScenarioId={activeScenario?.id}
-            onActiveScenarioChange={setScenarioId}
-            onDesignChange={changeDesign}
+        }
+        design={
+          <DesignTabs
+            activeTab={designTab}
+            onTabChange={setDesignTab}
+            scenarios={
+              <ScenarioWorkspace
+                design={design}
+                activeScenarioId={activeScenario?.id}
+                onActiveScenarioChange={setScenarioId}
+                onDesignChange={changeDesign}
+              />
+            }
+            architecture={
+              <ArchitectureView
+                design={design}
+                onSelectScenario={openScenario}
+              />
+            }
           />
-          <ArchitectureView design={design} onSelectScenario={setScenarioId} />
-        </div>
-        <aside className="space-y-8 lg:col-span-2 xl:sticky xl:top-4 xl:col-span-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+        }
+        coach={
           <CoachPanel
             projectId={project.id}
             design={design}
             scenarioId={activeScenario?.id}
             designSaving={saveDesign.isPending}
           />
+        }
+        review={
           <ReviewPanel
             projectId={project.id}
             design={design}
             designSaving={saveDesign.isPending}
           />
-        </aside>
-      </div>
+        }
+      />
+      {/*
       <details className="mt-8">
         <summary className="cursor-pointer text-sm font-medium text-zinc-700">
           System design JSON
@@ -103,6 +133,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           design={design}
         />
       </details>
+      */}
     </>
   );
 }

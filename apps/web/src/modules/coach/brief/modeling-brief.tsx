@@ -1,6 +1,7 @@
+import { Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '../../../components/ui/button';
 import { ErrorMessage } from '../../../components/ui/error-message';
+import { IconButton } from '../../../components/ui/icon-button';
 import { errorMessage } from '../../../shared/api-error';
 import { useSaveModelingIntent } from '../coach-queries';
 import { ModelingIntentForm } from './modeling-intent-form';
@@ -46,13 +47,11 @@ export function ModelingBrief({
               <span className="text-zinc-500">No description yet.</span>
             )}
           </p>
-          <Button
-            variant="secondary"
-            className="shrink-0"
+          <IconButton
+            label={modelingIntent ? 'Edit description' : 'Add description'}
+            icon={Pencil}
             onClick={() => setEditing(true)}
-          >
-            {modelingIntent ? 'Edit' : 'Add'}
-          </Button>
+          />
         </div>
       )}
       {saveIntent.isError && (

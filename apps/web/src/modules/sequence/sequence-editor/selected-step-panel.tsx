@@ -1,5 +1,6 @@
 import type { Component, SequenceStep } from '@flowment/domain';
-import { Button } from '../../../components/ui/button';
+import { ArrowDown, ArrowUp, Copy, Trash2 } from 'lucide-react';
+import { IconButton } from '../../../components/ui/icon-button';
 import { InteractionForm } from '../step-forms/interaction-form';
 import { NoteForm } from '../step-forms/note-form';
 import {
@@ -36,26 +37,29 @@ export function SelectedStepPanel({
       title={title}
       actions={
         <>
-          <Button
-            variant="secondary"
+          <IconButton
+            label="Move step up"
+            icon={ArrowUp}
             disabled={index === 0}
             onClick={() => onMove(index - 1)}
-          >
-            Move up
-          </Button>
-          <Button
-            variant="secondary"
+          />
+          <IconButton
+            label="Move step down"
+            icon={ArrowDown}
             disabled={index === stepCount - 1}
             onClick={() => onMove(index + 1)}
-          >
-            Move down
-          </Button>
-          <Button variant="secondary" onClick={onDuplicate}>
-            Duplicate
-          </Button>
-          <Button variant="danger" onClick={onDelete}>
-            Delete
-          </Button>
+          />
+          <IconButton
+            label="Duplicate step"
+            icon={Copy}
+            onClick={onDuplicate}
+          />
+          <IconButton
+            label="Delete step"
+            icon={Trash2}
+            variant="danger"
+            onClick={onDelete}
+          />
         </>
       }
     >

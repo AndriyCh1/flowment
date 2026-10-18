@@ -23,19 +23,11 @@ export function ArchitectureView({
     .map(participantName);
 
   return (
-    <section
-      aria-labelledby="architecture-heading"
-      className="min-w-0 space-y-3"
-    >
-      <div>
-        <h2 id="architecture-heading" className="text-lg font-semibold">
-          Architecture
-        </h2>
-        <p className="text-sm text-zinc-500">
-          Derived from the interactions in all scenarios. Edit the scenarios to
-          change it.
-        </p>
-      </div>
+    <div className="min-w-0 space-y-3">
+      <p className="text-sm text-zinc-500">
+        Derived from the interactions in all scenarios. Edit the scenarios to
+        change it.
+      </p>
       {design.components.length === 0 ? (
         <p className="text-sm text-zinc-500">No components yet.</p>
       ) : (
@@ -60,12 +52,11 @@ export function ArchitectureView({
           )}
           {unconnectedNames.length > 0 && (
             <p className="text-sm text-zinc-500">
-              Not connected to another component:{' '}
-              {unconnectedNames.join(', ')}.
+              Not connected to another component: {unconnectedNames.join(', ')}.
             </p>
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }
