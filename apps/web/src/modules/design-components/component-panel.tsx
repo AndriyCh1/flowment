@@ -3,6 +3,7 @@ import {
   deleteComponent,
   deleteComponentWithReferences,
   findComponentUsages,
+  moveComponent,
   replaceComponent,
   type SystemDesign,
 } from '@flowment/domain';
@@ -97,6 +98,9 @@ export function ComponentPanel({
           usages={usages}
           onSave={(component) =>
             onDesignChange(replaceComponent(design, component))
+          }
+          onMove={(toIndex) =>
+            onDesignChange(moveComponent(design, selected.id, toIndex))
           }
           onDelete={() => remove(selected.id)}
         />

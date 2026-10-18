@@ -1,5 +1,5 @@
 import type { Component, ComponentUsage } from '@flowment/domain';
-import { Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { IconButton } from '../../components/ui/icon-button';
 import { participantName } from '../../shared/design-labels';
@@ -15,6 +15,7 @@ type ComponentEditorProps = {
   components: Component[];
   usages: ComponentUsage[];
   onSave: (component: Component) => void;
+  onMove: (toIndex: number) => void;
   onDelete: () => void;
 };
 
@@ -23,9 +24,11 @@ export function ComponentEditor({
   components,
   usages,
   onSave,
+  onMove,
   onDelete,
 }: ComponentEditorProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const index = components.findIndex(({ id }) => id === component.id);
 
   return (
     <div className="space-y-3 border-t border-zinc-200 pt-3">
@@ -33,15 +36,29 @@ export function ComponentEditor({
         <h3 className="text-sm font-semibold wrap-anywhere">
           Edit {participantName(component)}
         </h3>
-        <IconButton
-          label="Delete component"
-          icon={Trash2}
-          variant="danger"
-          disabled={confirmingDelete}
-          onClick={() =>
-            usages.length === 0 ? onDelete() : setConfirmingDelete(true)
-          }
-        />
+        <div className="flex gap-2">
+          <IconButton
+            label="Move component up"
+            icon={ArrowUp}
+            disabled={index === 0}
+            onClick={() => onMove(index - 1)}
+          />
+          <IconButton
+            label="Move component down"
+            icon={ArrowDown}
+            disabled={index === components.length - 1}
+            onClick={() => onMove(index + 1)}
+          />
+          <IconButton
+            label="Delete component"
+            icon={Trash2}
+            variant="danger"
+            disabled={confirmingDelete}
+            onClick={() =>
+              usages.length === 0 ? onDelete() : setConfirmingDelete(true)
+            }
+          />
+        </div>
       </div>
       {confirmingDelete ? (
         <ComponentDeleteConfirmation

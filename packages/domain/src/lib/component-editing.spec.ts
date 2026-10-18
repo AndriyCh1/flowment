@@ -3,6 +3,7 @@ import {
   deleteComponent,
   deleteComponentWithReferences,
   findComponentUsages,
+  moveComponent,
   replaceComponent,
 } from './component-editing.js';
 import type { SequenceScenario } from './scenario.js';
@@ -110,6 +111,59 @@ describe('replaceComponent', () => {
     expect(() =>
       replaceComponent(design, { id: 'missing', name: 'X' }),
     ).toThrow('Unknown component "missing"');
+  });
+});
+
+describe('moveComponent', () => {
+  it('moves a component up and down', () => {
+    expect(componentIds(moveComponent(design, 'db', 1))).toEqual([
+      'client',
+      'db',
+      'api',
+      'queue',
+    ]);
+    expect(componentIds(moveComponent(design, 'api', 2))).toEqual([
+      'client',
+      'db',
+      'api',
+      'queue',
+    ]);
+  });
+
+  it('moves a component to the start and the end', () => {
+    expect(componentIds(moveComponent(design, 'queue', 0))).toEqual([
+      'queue',
+      'client',
+      'api',
+      'db',
+    ]);
+    expect(componentIds(moveComponent(design, 'client', 3))).toEqual([
+      'api',
+      'db',
+      'queue',
+      'client',
+    ]);
+  });
+
+  it('keeps the order when a component moves to its own position', () => {
+    expect(componentIds(moveComponent(design, 'api', 1))).toEqual(
+      componentIds(design),
+    );
+  });
+
+  it('leaves scenarios and the components themselves untouched', () => {
+    const result = moveComponent(design, 'db', 0);
+    expect(result.scenarios).toBe(design.scenarios);
+    expect(result.components[0]).toBe(design.components[2]);
+  });
+
+  it('rejects an unknown component or a position outside the list', () => {
+    expect(() => moveComponent(design, 'missing', 0)).toThrow(
+      'Unknown component "missing"',
+    );
+    expect(() => moveComponent(design, 'api', 4)).toThrow(RangeError);
+    expect(() => moveComponent(design, 'api', -1)).toThrow(RangeError);
+    expect(() => moveComponent(design, 'api', 0.5)).toThrow(RangeError);
   });
 });
 

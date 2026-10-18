@@ -49,6 +49,24 @@ export function replaceComponent(
   };
 }
 
+export function moveComponent(
+  design: SystemDesign,
+  componentId: string,
+  toIndex: number,
+): SystemDesign {
+  const component = design.components.find(({ id }) => id === componentId);
+  if (!component) {
+    throw new Error(`Unknown component "${componentId}"`);
+  }
+  const max = design.components.length - 1;
+  if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex > max) {
+    throw new RangeError(`Component position ${toIndex} is outside 0..${max}`);
+  }
+  const components = withoutComponent(design, componentId);
+  components.splice(toIndex, 0, component);
+  return { ...design, components };
+}
+
 export function findComponentUsages(
   design: SystemDesign,
   componentId: string,
