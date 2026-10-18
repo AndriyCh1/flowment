@@ -29,6 +29,13 @@
       "when": 1792275895832,
       "tag": "0003_add_project_exercise",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792282712041,
+      "tag": "0004_create_project_reviews",
+      "breakpoints": true
     }
   ]
 }

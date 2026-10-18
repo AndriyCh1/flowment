@@ -2,7 +2,9 @@ import {
   CoachActionSchema,
   HintOutcomeSchema,
   ObjectiveEvaluationSchema,
+  ReviewFeedbackSchema,
   type ObjectiveEvaluation,
+  type ReviewFeedback,
 } from '@flowment/domain';
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
@@ -19,6 +21,7 @@ import {
   type ObjectiveEvaluationInput,
   type PossibleAnswerDraft,
   type PossibleAnswerInput,
+  type ReviewInput,
 } from './coach-ai-provider';
 import {
   CLARIFICATION_HINT_INSTRUCTIONS,
@@ -28,6 +31,7 @@ import {
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
   OPEN_PROJECT_INSTRUCTIONS,
   POSSIBLE_ANSWER_INSTRUCTIONS,
+  REVIEW_INSTRUCTIONS,
 } from './coach-prompts';
 
 const OpenResponseFormat = z.object({
@@ -62,6 +66,14 @@ const ObjectiveEvaluationFormat = z.object({
   summary: z.string().nullable(),
   gap: z.string().nullable(),
   reason: z.string().nullable(),
+});
+
+const ReviewFormat = z.object({
+  strongestReasoning: z.string(),
+  missedIssue: z.string().nullable(),
+  whyItMatters: z.string().nullable(),
+  alternative: z.string().nullable(),
+  nextSkill: z.string(),
 });
 
 @Injectable()
@@ -153,6 +165,35 @@ export class PromptCoachAiProvider implements CoachAiProvider {
     });
 
     return PossibleAnswerDraftSchema.parse(output);
+  }
+
+  async generateReview({
+    context,
+    objectives,
+  }: ReviewInput): Promise<ReviewFeedback> {
+    const {
+      strongestReasoning,
+      missedIssue,
+      whyItMatters,
+      alternative,
+      nextSkill,
+    } = await this.ai.generateObject({
+      name: 'project_review',
+      instructions: REVIEW_INSTRUCTIONS,
+      input: JSON.stringify({
+        context,
+        ...(objectives.length > 0 ? { objectives } : {}),
+      }),
+      schema: ReviewFormat,
+    });
+
+    return ReviewFeedbackSchema.parse({
+      strongestReasoning,
+      missedIssue:
+        missedIssue === null ? null : { issue: missedIssue, whyItMatters },
+      alternative,
+      nextSkill,
+    });
   }
 
   async evaluateObjective({

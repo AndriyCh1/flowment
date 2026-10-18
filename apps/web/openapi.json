@@ -838,6 +838,126 @@
           "coach"
         ]
       }
+    },
+    "/api/projects/{projectId}/reviews": {
+      "get": {
+        "operationId": "listReviews",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "coach"
+        ]
+      },
+      "post": {
+        "operationId": "submitForReview",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "coach"
+        ]
+      }
     }
   },
   "info": {
@@ -2142,6 +2262,127 @@
         "required": [
           "questionId",
           "kind"
+        ]
+      },
+      "ReviewListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "designRevision": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "strongestReasoning": {
+                  "type": "string"
+                },
+                "missedIssue": {
+                  "type": "object",
+                  "properties": {
+                    "issue": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "whyItMatters": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "issue",
+                    "whyItMatters"
+                  ],
+                  "nullable": true
+                },
+                "alternative": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "nextSkill": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "designRevision",
+                "createdAt",
+                "strongestReasoning",
+                "missedIssue",
+                "alternative",
+                "nextSkill"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "designRevision": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "strongestReasoning": {
+            "type": "string"
+          },
+          "missedIssue": {
+            "type": "object",
+            "properties": {
+              "issue": {
+                "type": "string",
+                "minLength": 1
+              },
+              "whyItMatters": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "issue",
+              "whyItMatters"
+            ],
+            "nullable": true
+          },
+          "alternative": {
+            "type": "string",
+            "nullable": true
+          },
+          "nextSkill": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "designRevision",
+          "createdAt",
+          "strongestReasoning",
+          "missedIssue",
+          "alternative",
+          "nextSkill"
         ]
       }
     }

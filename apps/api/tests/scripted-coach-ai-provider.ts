@@ -1,4 +1,4 @@
-import type { ObjectiveEvaluation } from '@flowment/domain';
+import type { ObjectiveEvaluation, ReviewFeedback } from '@flowment/domain';
 import type {
   CoachAiProvider,
   CoachDraft,
@@ -8,6 +8,7 @@ import type {
   ObjectiveEvaluationInput,
   PossibleAnswerDraft,
   PossibleAnswerInput,
+  ReviewInput,
 } from '../src/modules/coach';
 
 type Scripted = unknown | (() => unknown);
@@ -28,10 +29,12 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
   readonly hintInputs: HintInput[] = [];
   readonly possibleAnswerInputs: PossibleAnswerInput[] = [];
   readonly evaluationInputs: ObjectiveEvaluationInput[] = [];
+  readonly reviewInputs: ReviewInput[] = [];
   private readonly questions: Scripted[] = [];
   private readonly hints: Scripted[] = [];
   private readonly possibleAnswers: Scripted[] = [];
   private readonly evaluations: Scripted[] = [];
+  private readonly reviews: Scripted[] = [];
 
   willRespond(...responses: Scripted[]): void {
     this.questions.push(...responses);
@@ -49,15 +52,21 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
     this.evaluations.push(...responses);
   }
 
+  willReview(...responses: Scripted[]): void {
+    this.reviews.push(...responses);
+  }
+
   reset(): void {
     this.questionInputs.length = 0;
     this.hintInputs.length = 0;
     this.possibleAnswerInputs.length = 0;
     this.evaluationInputs.length = 0;
+    this.reviewInputs.length = 0;
     this.questions.length = 0;
     this.hints.length = 0;
     this.possibleAnswers.length = 0;
     this.evaluations.length = 0;
+    this.reviews.length = 0;
   }
 
   async generateCoachQuestion(input: CoachInput): Promise<CoachDraft> {
@@ -78,6 +87,11 @@ export class ScriptedCoachAiProvider implements CoachAiProvider {
       this.possibleAnswers,
       'generatePossibleAnswer',
     )) as PossibleAnswerDraft;
+  }
+
+  async generateReview(input: ReviewInput): Promise<ReviewFeedback> {
+    this.reviewInputs.push(structuredClone(input));
+    return (await play(this.reviews, 'generateReview')) as ReviewFeedback;
   }
 
   async evaluateObjective(

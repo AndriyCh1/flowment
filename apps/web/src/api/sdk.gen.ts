@@ -31,6 +31,9 @@ import type {
   ListProjectsData,
   ListProjectsErrors,
   ListProjectsResponses,
+  ListReviewsData,
+  ListReviewsErrors,
+  ListReviewsResponses,
   ReplyToCoachData,
   ReplyToCoachErrors,
   ReplyToCoachResponses,
@@ -49,6 +52,9 @@ import type {
   StartExerciseData,
   StartExerciseErrors,
   StartExerciseResponses,
+  SubmitForReviewData,
+  SubmitForReviewErrors,
+  SubmitForReviewResponses,
   UpdateModelingIntentData,
   UpdateModelingIntentErrors,
   UpdateModelingIntentResponses,
@@ -295,3 +301,25 @@ export const resetCoachSession = <ThrowOnError extends boolean = false>(
     ResetCoachSessionErrors,
     ThrowOnError
   >({ url: '/api/projects/{projectId}/coach/reset', ...options });
+
+export const listReviews = <ThrowOnError extends boolean = false>(
+  options: Options<ListReviewsData, ThrowOnError>,
+): RequestResult<ListReviewsResponses, ListReviewsErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    ListReviewsResponses,
+    ListReviewsErrors,
+    ThrowOnError
+  >({ url: '/api/projects/{projectId}/reviews', ...options });
+
+export const submitForReview = <ThrowOnError extends boolean = false>(
+  options: Options<SubmitForReviewData, ThrowOnError>,
+): RequestResult<
+  SubmitForReviewResponses,
+  SubmitForReviewErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    SubmitForReviewResponses,
+    SubmitForReviewErrors,
+    ThrowOnError
+  >({ url: '/api/projects/{projectId}/reviews', ...options });

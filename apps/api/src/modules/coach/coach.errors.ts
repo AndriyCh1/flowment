@@ -24,6 +24,14 @@ export class CoachPossibleAnswerNotAvailableError extends ApplicationError {
   }
 }
 
+export class ReviewDesignEmptyError extends ApplicationError {
+  readonly code = ErrorCode.CONFLICT;
+
+  constructor() {
+    super('Add something to the design before submitting it for review');
+  }
+}
+
 export class CoachSessionChangedError extends ApplicationError {
   readonly code = ErrorCode.CONFLICT;
 

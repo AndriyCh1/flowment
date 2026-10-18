@@ -3,12 +3,13 @@ import { useState } from 'react';
 import type { ProjectDto } from '../../api';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { errorMessage } from '../../shared/api-error';
+import { formatTimestamp } from '../../shared/format-timestamp';
 import { ArchitectureView } from '../architecture';
 import { CoachPanel } from '../coach';
 import { ComponentPanel } from '../design-components';
 import { ExerciseBrief } from '../exercises';
+import { ReviewPanel } from '../reviews';
 import { ScenarioWorkspace } from '../scenarios';
-import { formatTimestamp } from './format-timestamp';
 import { ProjectNameForm } from './project-name-form';
 import { useSaveSystemDesign } from './project-queries';
 import { SystemDesignEditor } from './system-design-editor';
@@ -78,11 +79,16 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           />
           <ArchitectureView design={design} onSelectScenario={setScenarioId} />
         </div>
-        <aside className="lg:col-span-2 xl:sticky xl:top-4 xl:col-span-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+        <aside className="space-y-8 lg:col-span-2 xl:sticky xl:top-4 xl:col-span-1 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
           <CoachPanel
             projectId={project.id}
             design={design}
             scenarioId={activeScenario?.id}
+            designSaving={saveDesign.isPending}
+          />
+          <ReviewPanel
+            projectId={project.id}
+            design={design}
             designSaving={saveDesign.isPending}
           />
         </aside>

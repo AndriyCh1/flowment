@@ -9,6 +9,7 @@ export * from './lib/explicitness.js';
 export * from './lib/id.js';
 export * from './lib/missing-step.js';
 export * from './lib/project.js';
+export * from './lib/review.js';
 export * from './lib/scenario.js';
 export * from './lib/scenario-editing.js';
 export * from './lib/sequence-editing.js';

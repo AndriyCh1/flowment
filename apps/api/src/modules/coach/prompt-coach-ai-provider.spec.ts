@@ -10,6 +10,7 @@ import {
   OBJECTIVE_UNCLEAR_INSTRUCTIONS,
   OPEN_PROJECT_INSTRUCTIONS,
   POSSIBLE_ANSWER_INSTRUCTIONS,
+  REVIEW_INSTRUCTIONS,
 } from './coach-prompts';
 import { PromptCoachAiProvider } from './prompt-coach-ai-provider';
 
@@ -291,7 +292,10 @@ describe('PromptCoachAiProvider', () => {
       expect(JSON.parse(requests[0].input)).toMatchObject({
         objectives: [objective],
       });
-      expect(draft).toEqual({ outcome: 'resolved', text: 'Step 2 settles it.' });
+      expect(draft).toEqual({
+        outcome: 'resolved',
+        text: 'Step 2 settles it.',
+      });
     });
 
     it('rejects blank text', async () => {
@@ -483,6 +487,87 @@ describe('PromptCoachAiProvider', () => {
 
       await expect(
         provider.evaluateObjective({ context, objective }),
+      ).rejects.toThrow(ZodError);
+    });
+  });
+
+  describe('generateReview', () => {
+    const modelReview = {
+      strongestReasoning: 'Step 2 records the month before it is needed.',
+      missedIssue: 'The Worker never loads the month.',
+      whyItMatters: 'It cannot tell which report to write.',
+      alternative: 'Put the month in the queue message.',
+      nextSkill:
+        'Information provenance, because the gap was a missing lookup.',
+    };
+
+    it('sends the context and the objectives with the review instructions', async () => {
+      const { provider, requests } = setup(modelReview);
+
+      await provider.generateReview({
+        context,
+        objectives: [objective],
+      });
+
+      expect(requests).toEqual([
+        {
+          name: 'project_review',
+          instructions: REVIEW_INSTRUCTIONS,
+          input: JSON.stringify({ context, objectives: [objective] }),
+        },
+      ]);
+    });
+
+    it('sends no objectives for an open project', async () => {
+      const { provider, requests } = setup(modelReview);
+
+      await provider.generateReview({ context, objectives: [] });
+
+      expect(requests[0].input).toBe(JSON.stringify({ context }));
+    });
+
+    it('groups the missed issue with why it matters', async () => {
+      const { provider } = setup(modelReview);
+
+      expect(
+        await provider.generateReview({ context, objectives: [] }),
+      ).toEqual({
+        strongestReasoning: modelReview.strongestReasoning,
+        missedIssue: {
+          issue: modelReview.missedIssue,
+          whyItMatters: modelReview.whyItMatters,
+        },
+        alternative: modelReview.alternative,
+        nextSkill: modelReview.nextSkill,
+      });
+    });
+
+    it('accepts a review with no missed issue and no alternative', async () => {
+      const { provider } = setup({
+        ...modelReview,
+        missedIssue: null,
+        whyItMatters: null,
+        alternative: null,
+      });
+
+      expect(
+        await provider.generateReview({ context, objectives: [] }),
+      ).toMatchObject({ missedIssue: null, alternative: null });
+    });
+
+    it('rejects a missed issue without why it matters', async () => {
+      const { provider } = setup({ ...modelReview, whyItMatters: null });
+
+      await expect(
+        provider.generateReview({ context, objectives: [] }),
+      ).rejects.toThrow(ZodError);
+    });
+
+    it('rejects a blank next skill', async () => {
+      const { provider } = setup({ ...modelReview, nextSkill: ' ' });
+
+      await expect(
+        provider.generateReview({ context, objectives: [] }),
       ).rejects.toThrow(ZodError);
     });
   });

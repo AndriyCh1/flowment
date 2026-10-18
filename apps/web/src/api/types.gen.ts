@@ -313,6 +313,34 @@ export type CoachReplyDto = {
   text?: string;
 };
 
+export type ReviewListDto = {
+  items: Array<{
+    id: string;
+    designRevision: string;
+    createdAt: string;
+    strongestReasoning: string;
+    missedIssue: {
+      issue: string;
+      whyItMatters: string;
+    } | null;
+    alternative: string | null;
+    nextSkill: string;
+  }>;
+};
+
+export type ReviewDto = {
+  id: string;
+  designRevision: string;
+  createdAt: string;
+  strongestReasoning: string;
+  missedIssue: {
+    issue: string;
+    whyItMatters: string;
+  } | null;
+  alternative: string | null;
+  nextSkill: string;
+};
+
 export type HealthControllerCheckData = {
   body?: never;
   path?: never;
@@ -667,3 +695,52 @@ export type ResetCoachSessionResponses = {
 
 export type ResetCoachSessionResponse =
   ResetCoachSessionResponses[keyof ResetCoachSessionResponses];
+
+export type ListReviewsData = {
+  body?: never;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/reviews';
+};
+
+export type ListReviewsErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+};
+
+export type ListReviewsError = ListReviewsErrors[keyof ListReviewsErrors];
+
+export type ListReviewsResponses = {
+  default: ReviewListDto;
+};
+
+export type ListReviewsResponse =
+  ListReviewsResponses[keyof ListReviewsResponses];
+
+export type SubmitForReviewData = {
+  body?: never;
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/api/projects/{projectId}/reviews';
+};
+
+export type SubmitForReviewErrors = {
+  400: ErrorResponseDto;
+  404: ErrorResponseDto;
+  409: ErrorResponseDto;
+  503: ErrorResponseDto;
+};
+
+export type SubmitForReviewError =
+  SubmitForReviewErrors[keyof SubmitForReviewErrors];
+
+export type SubmitForReviewResponses = {
+  200: ReviewDto;
+};
+
+export type SubmitForReviewResponse =
+  SubmitForReviewResponses[keyof SubmitForReviewResponses];

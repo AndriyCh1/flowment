@@ -5,6 +5,7 @@ import {
   type ExerciseObjective,
   type HintLevel,
   type ObjectiveEvaluation,
+  type ReviewFeedback,
 } from '@flowment/domain';
 import { z } from 'zod';
 import type { CoachContext } from './coach-context';
@@ -88,6 +89,11 @@ export type PossibleAnswerInput = {
   objectives: ExerciseObjective[];
 };
 
+export type ReviewInput = {
+  context: CoachContext;
+  objectives: ExerciseObjective[];
+};
+
 export interface CoachAiProvider {
   generateCoachQuestion(input: CoachInput): Promise<CoachDraft>;
   generateHint(input: HintInput): Promise<HintDraft>;
@@ -97,4 +103,5 @@ export interface CoachAiProvider {
   evaluateObjective(
     input: ObjectiveEvaluationInput,
   ): Promise<ObjectiveEvaluation>;
+  generateReview(input: ReviewInput): Promise<ReviewFeedback>;
 }

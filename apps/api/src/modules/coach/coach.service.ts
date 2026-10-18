@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
   ObjectiveEvaluationSchema,
-  SystemDesignSchema,
   coachStageAfter,
   designRevision,
   designStepIds,
@@ -44,6 +43,7 @@ import {
   type CoachFocus,
   type ProviderQuestion,
 } from './coach-ai-provider';
+import { callCoachProvider } from './call-coach-provider';
 import { buildCoachContext, type CoachContext } from './coach-context';
 import type {
   CoachHintRequestInput,
@@ -57,8 +57,8 @@ import {
   CoachPossibleAnswerNotAvailableError,
   CoachQuestionNotActiveError,
   CoachSessionChangedError,
-  CoachUnavailableError,
 } from './coach.errors';
+import { loadCoachedProject, type CoachedProject } from './coached-project';
 import {
   missingStepQuestion,
   unlabeledInteractionQuestion,
@@ -70,11 +70,6 @@ export const DISCOVERY_QUESTION =
 const MAX_REPLY_ATTEMPTS = 3;
 
 type CoachSessionRow = typeof coachSessions.$inferSelect;
-
-type CoachedProject = {
-  design: SystemDesign;
-  exercise: Exercise | null;
-};
 
 type CoachSessionChanges = Partial<
   Pick<
@@ -516,16 +511,8 @@ export class CoachService {
     return updated;
   }
 
-  private async loadProjectForCoaching(
-    projectId: string,
-  ): Promise<CoachedProject> {
-    const project = await this.projects.get(projectId);
-    return {
-      design: SystemDesignSchema.parse(project.systemDesign),
-      exercise: project.exerciseId
-        ? (this.exercises.findExercise(project.exerciseId) ?? null)
-        : null,
-    };
+  private loadProjectForCoaching(projectId: string): Promise<CoachedProject> {
+    return loadCoachedProject(this.projects, this.exercises, projectId);
   }
 
   private buildContext(
@@ -633,19 +620,11 @@ export class CoachService {
     };
   }
 
-  private async callProvider<Schema extends z.ZodType>(
+  private callProvider<Schema extends z.ZodType>(
     task: string,
     schema: Schema,
     call: () => Promise<unknown>,
   ): Promise<z.output<Schema>> {
-    try {
-      return schema.parse(await call());
-    } catch (error) {
-      this.logger.error(
-        `The coach provider failed to ${task}`,
-        error instanceof Error ? (error.stack ?? error.message) : String(error),
-      );
-      throw new CoachUnavailableError({ cause: error });
-    }
+    return callCoachProvider(this.logger, task, schema, call);
   }
 }

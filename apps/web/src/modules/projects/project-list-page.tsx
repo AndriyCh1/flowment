@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { ErrorMessage } from '../../components/ui/error-message';
 import { Input } from '../../components/ui/input';
 import { errorMessage } from '../../shared/api-error';
-import { formatTimestamp } from './format-timestamp';
+import { formatTimestamp } from '../../shared/format-timestamp';
 import { ProjectNameFormSchema } from './project-form-schemas';
 import { useCreateProject, useProjectList } from './project-queries';
 
