@@ -1,6 +1,7 @@
 import {
   coachOutputText,
   designRevision,
+  findMissingStepMarker,
   type AssumptionStatus,
   type CoachAction,
   type CoachMode,
@@ -89,6 +90,7 @@ export type ContextExercise = {
   title: string;
   mode: TrainingMode;
   prompt: string;
+  missingStep?: { scenarioId: string; stepId: string };
 };
 
 export type CoachContext = {
@@ -169,6 +171,23 @@ function contextScenario(
   };
 }
 
+function contextExercise(
+  { title, mode, prompt, missingStep }: Exercise,
+  design: SystemDesign,
+): ContextExercise {
+  const marker = missingStep
+    ? findMissingStepMarker(design, missingStep)
+    : null;
+  return {
+    title,
+    mode,
+    prompt,
+    ...(marker
+      ? { missingStep: { scenarioId: marker.scenarioId, stepId: marker.step.id } }
+      : {}),
+  };
+}
+
 function contextTurn(turn: CoachTurn): ContextTurn {
   if (turn.role === 'learner') {
     return { role: 'learner', kind: turn.kind, text: turn.text };
@@ -227,9 +246,7 @@ export function buildCoachContext({
   return {
     projectId,
     mode,
-    exercise: exercise
-      ? { title: exercise.title, mode: exercise.mode, prompt: exercise.prompt }
-      : null,
+    exercise: exercise ? contextExercise(exercise, design) : null,
     designRevision: designRevision(design),
     modelingIntent: modelingIntent?.trim() || null,
     components: design.components.map(contextComponent),

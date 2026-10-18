@@ -220,40 +220,40 @@ describe('Exercises API', () => {
     });
   });
 
-  describe('trace exercises', () => {
-    type Step = SystemDesign['scenarios'][number]['steps'][number];
+  type Step = SystemDesign['scenarios'][number]['steps'][number];
 
-    const withSteps = (design: SystemDesign, steps: Step[]): SystemDesign => ({
-      ...design,
-      scenarios: design.scenarios.map((scenario, index) =>
-        index === 0 ? { ...scenario, steps } : scenario,
-      ),
+  const withSteps = (design: SystemDesign, steps: Step[]): SystemDesign => ({
+    ...design,
+    scenarios: design.scenarios.map((scenario, index) =>
+      index === 0 ? { ...scenario, steps } : scenario,
+    ),
+  });
+
+  const startWithSteps = async (
+    exercise: (typeof EXERCISE_CATALOG)[number],
+    steps: Step[],
+  ) => {
+    const { body: project } = await startExercise(exercise.id);
+    await api.request('PATCH', `/api/projects/${project.id}`, {
+      systemDesign: withSteps(exercise.startingDesign, steps),
     });
+    return project;
+  };
 
-    const startWithSteps = async (
-      exercise: (typeof EXERCISE_CATALOG)[number],
-      steps: Step[],
-    ) => {
-      const { body: project } = await startExercise(exercise.id);
-      await api.request('PATCH', `/api/projects/${project.id}`, {
-        systemDesign: withSteps(exercise.startingDesign, steps),
-      });
-      return project;
-    };
+  const next = (projectId: string) =>
+    api.request<CoachSession>(
+      'POST',
+      `/api/projects/${projectId}/coach/next`,
+      {},
+    );
 
-    const next = (projectId: string) =>
-      api.request<CoachSession>(
-        'POST',
-        `/api/projects/${projectId}/coach/next`,
-        {},
-      );
+  const satisfied = {
+    status: 'satisfied',
+    evidence: [],
+    summary: 'Done.',
+  };
 
-    const satisfied = {
-      status: 'satisfied',
-      evidence: [],
-      summary: 'Done.',
-    };
-
+  describe('trace exercises', () => {
     it('checks explicitness before the learning objectives', async () => {
       const { body: project } = await startExercise(traceExercise.id);
 
@@ -349,6 +349,115 @@ describe('Exercises API', () => {
       expect(body.stage).toBe('objective-reached');
       expect(ai.evaluationInputs.map(({ objective }) => objective)).toEqual(
         completeExercise.learningObjectives,
+      );
+    });
+  });
+
+  describe('complete exercises', () => {
+    const providedSteps = completeExercise.startingDesign.scenarios[0].steps;
+    const markerIndex = providedSteps.findIndex(
+      ({ id }) => id === 'missing-step',
+    );
+
+    it('asks about the missing step while its marker is there, without calling the AI', async () => {
+      const { body: project } = await startExercise(completeExercise.id);
+
+      const { status, body } = await next(project.id);
+
+      expect(status).toBe(200);
+      expect(body.stage).toBe('reviewing');
+      expect(body.turns.at(-1)).toMatchObject({
+        role: 'coach',
+        output: {
+          type: 'question',
+          questionId: body.activeQuestionId,
+          purpose: 'review',
+          text: `Step ${markerIndex + 1} marks a missing step. What has to happen at that point? Replace the marker with the steps you add.`,
+          relatedStepIds: ['missing-step'],
+        },
+      });
+      expect(ai.evaluationInputs).toHaveLength(0);
+      expect(ai.questionInputs).toHaveLength(0);
+    });
+
+    it('tells the hint where the missing step is', async () => {
+      const { body: project } = await startExercise(completeExercise.id);
+      const { body: session } = await next(project.id);
+      ai.willHint({ outcome: 'hint', text: 'Look at what the Worker holds.' });
+
+      const { status } = await api.request(
+        'POST',
+        `/api/projects/${project.id}/coach/hint`,
+        { questionId: session.activeQuestionId },
+      );
+
+      expect(status).toBe(200);
+      expect(ai.hintInputs[0].context.exercise).toEqual({
+        title: completeExercise.title,
+        mode: 'complete',
+        prompt: completeExercise.prompt,
+        missingStep: { scenarioId: 'report-ready', stepId: 'missing-step' },
+      });
+      expect(ai.hintInputs[0].question.relatedStepIds).toEqual([
+        'missing-step',
+      ]);
+    });
+
+    it('keeps asking while the marker stays, even after steps are added', async () => {
+      const project = await startWithSteps(completeExercise, [
+        ...providedSteps.slice(0, markerIndex),
+        {
+          id: 'load-request',
+          type: 'interaction',
+          from: 'worker',
+          to: 'report-db',
+          text: 'Load report request (reportId)',
+        },
+        ...providedSteps.slice(markerIndex),
+      ]);
+
+      const { body } = await next(project.id);
+
+      expect(body.turns.at(-1)).toMatchObject({
+        output: {
+          text: expect.stringMatching(`^Step ${markerIndex + 2} marks`),
+          relatedStepIds: ['missing-step'],
+        },
+      });
+      expect(ai.evaluationInputs).toHaveLength(0);
+    });
+
+    it('evaluates the objectives once the marker is replaced, whatever the wording', async () => {
+      const project = await startWithSteps(completeExercise, [
+        ...providedSteps.slice(0, markerIndex),
+        {
+          id: 'ask-month',
+          type: 'interaction',
+          from: 'worker',
+          to: 'report-db',
+          text: 'which month is this one for?',
+        },
+        {
+          id: 'month',
+          type: 'interaction',
+          from: 'report-db',
+          to: 'worker',
+          text: 'March',
+        },
+        ...providedSteps.slice(markerIndex + 1),
+      ]);
+      ai.willEvaluate(
+        ...completeExercise.learningObjectives.map(() => satisfied),
+      );
+
+      const { body } = await next(project.id);
+
+      expect(body.stage).toBe('objective-reached');
+      expect(ai.evaluationInputs.map(({ objective }) => objective)).toEqual(
+        completeExercise.learningObjectives,
+      );
+      expect(ai.evaluationInputs[0].context.exercise).not.toHaveProperty(
+        'missingStep',
       );
     });
   });

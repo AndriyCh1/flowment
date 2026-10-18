@@ -7,6 +7,7 @@ export * from './lib/design-revision.js';
 export * from './lib/exercise.js';
 export * from './lib/explicitness.js';
 export * from './lib/id.js';
+export * from './lib/missing-step.js';
 export * from './lib/project.js';
 export * from './lib/scenario.js';
 export * from './lib/scenario-editing.js';

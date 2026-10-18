@@ -125,6 +125,37 @@ describe('buildCoachContext', () => {
     });
   });
 
+  it('names the missing step marker while it is in the design', () => {
+    const exercise: Exercise = {
+      id: 'complete-processing',
+      title: 'Complete the processing',
+      difficulty: 1,
+      mode: 'complete',
+      prompt: 'Fill the gap.',
+      learningObjectives: [{ id: 'o1', description: 'Find the file' }],
+      startingDesign: design,
+      missingStep: { scenarioId: 'processing', stepId: 's2' },
+    };
+    const contextExercise = (current: SystemDesign) =>
+      buildCoachContext(source({ mode: 'exercise', exercise, design: current }))
+        .exercise;
+    const withoutMarker: SystemDesign = {
+      ...design,
+      scenarios: design.scenarios.map((scenario) => ({
+        ...scenario,
+        steps: scenario.steps.filter(({ id }) => id !== 's2'),
+      })),
+    };
+
+    expect(contextExercise(design)).toEqual({
+      title: 'Complete the processing',
+      mode: 'complete',
+      prompt: 'Fill the gap.',
+      missingStep: { scenarioId: 'processing', stepId: 's2' },
+    });
+    expect(contextExercise(withoutMarker)).not.toHaveProperty('missingStep');
+  });
+
   it('carries the learner description and treats a blank one as missing', () => {
     expect(
       buildCoachContext(source({ modelingIntent: ' A URL shortener ' }))

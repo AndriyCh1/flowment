@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ExerciseObjectiveSchema, type ExerciseObjective } from './coach.js';
 import { IdSchema } from './id.js';
+import { MissingStepSchema, findMissingStepMarker } from './missing-step.js';
 import { SystemDesignSchema } from './system-design.js';
 import { reportDuplicateIds } from './validation.js';
 
@@ -33,6 +34,7 @@ export const ExerciseSchema = z
     prompt: z.string().trim().min(1),
     learningObjectives: z.array(ExerciseObjectiveSchema).min(1),
     startingDesign: SystemDesignSchema,
+    missingStep: MissingStepSchema.optional(),
   })
   .superRefine((exercise, ctx) => {
     reportDuplicateIds(
@@ -41,6 +43,33 @@ export const ExerciseSchema = z
       'objective',
       ctx,
     );
+
+    if (exercise.mode === 'complete' && !exercise.missingStep) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A complete exercise needs a missing step',
+        path: ['missingStep'],
+      });
+    }
+
+    if (exercise.mode !== 'complete' && exercise.missingStep) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Only complete exercises have a missing step',
+        path: ['missingStep'],
+      });
+    }
+
+    if (
+      exercise.missingStep &&
+      !findMissingStepMarker(exercise.startingDesign, exercise.missingStep)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'The missing step must be a note in the starting design',
+        path: ['missingStep'],
+      });
+    }
 
     if (exercise.mode === 'trace') {
       exercise.learningObjectives.forEach(({ id }, index) => {

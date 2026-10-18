@@ -1,4 +1,8 @@
-import type { SystemDesign, UnlabeledInteraction } from '@flowment/domain';
+import type {
+  MissingStepMarker,
+  SystemDesign,
+  UnlabeledInteraction,
+} from '@flowment/domain';
 import { componentName } from './coach-context';
 
 export function unlabeledInteractionQuestion(
@@ -17,4 +21,8 @@ export function unlabeledInteractionQuestion(
   return step.from === step.to
     ? `Step ${number} doesn't say what ${from} does. What does ${from} do there?`
     : `Step ${number}, ${from} → ${to}, doesn't say what is sent. What does ${from} send to ${to} there?`;
+}
+
+export function missingStepQuestion({ number }: MissingStepMarker): string {
+  return `Step ${number} marks a missing step. What has to happen at that point? Replace the marker with the steps you add.`;
 }

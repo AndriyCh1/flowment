@@ -161,6 +161,7 @@ const completeMonthlyReport: Exercise = {
     ],
     assumptions: [],
   },
+  missingStep: { scenarioId: 'report-ready', stepId: 'missing-step' },
 };
 
 const repairEarlyPaidOrder: Exercise = {

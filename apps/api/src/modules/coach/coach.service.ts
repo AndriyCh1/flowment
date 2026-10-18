@@ -7,6 +7,7 @@ import {
   designStepIds,
   findCoachQuestion,
   findLatestPossibleAnswer,
+  findMissingStepMarker,
   findUnlabeledInteractions,
   hintsForQuestion,
   initialCoachStage,
@@ -58,7 +59,10 @@ import {
   CoachSessionChangedError,
   CoachUnavailableError,
 } from './coach.errors';
-import { unlabeledInteractionQuestion } from './explicitness-question';
+import {
+  missingStepQuestion,
+  unlabeledInteractionQuestion,
+} from './exercise-questions';
 
 export const DISCOVERY_QUESTION =
   'What system or behavior do you want to explore?';
@@ -148,6 +152,34 @@ function toProviderQuestion(
 
 function reviewOrGuidePurpose(design: SystemDesign): CoachQuestionPurpose {
   return designStepIds(design).size > 0 ? 'review' : 'guide';
+}
+
+function findFixedExerciseQuestion(
+  exercise: Exercise,
+  design: SystemDesign,
+): CoachQuestion | null {
+  if (exercise.mode === 'trace') {
+    const [unlabeled] = findUnlabeledInteractions(design);
+    return unlabeled
+      ? createQuestion(
+          'review',
+          unlabeledInteractionQuestion(design, unlabeled),
+          design,
+          [unlabeled.step.id],
+        )
+      : null;
+  }
+
+  if (exercise.mode === 'complete' && exercise.missingStep) {
+    const marker = findMissingStepMarker(design, exercise.missingStep);
+    return marker
+      ? createQuestion('review', missingStepQuestion(marker), design, [
+          marker.step.id,
+        ])
+      : null;
+  }
+
+  return null;
 }
 
 function openProjectOutputFromDraft(
@@ -517,19 +549,15 @@ export class CoachService {
     project: CoachedProject,
     selectedScenarioId: string | null,
   ): Promise<CoachOutput> {
-    const { design } = project;
+    const { design, exercise } = project;
     const context = this.buildContext(row, project, selectedScenarioId);
 
-    if (context.exercise?.mode === 'trace') {
-      const [unlabeled] = findUnlabeledInteractions(design);
-      if (unlabeled) {
-        return createQuestion(
-          'review',
-          unlabeledInteractionQuestion(design, unlabeled),
-          design,
-          [unlabeled.step.id],
-        );
-      }
+    const fixedQuestion =
+      row.mode === 'exercise' && exercise
+        ? findFixedExerciseQuestion(exercise, design)
+        : null;
+    if (fixedQuestion) {
+      return fixedQuestion;
     }
 
     if (row.mode === 'exercise' && row.objectives.length > 0) {

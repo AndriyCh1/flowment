@@ -24,13 +24,43 @@ const exercise: Exercise = {
   },
 };
 
+const completeExercise: Exercise = {
+  ...exercise,
+  id: 'complete-upload',
+  mode: 'complete',
+  startingDesign: {
+    ...exercise.startingDesign,
+    scenarios: [
+      {
+        id: 'upload',
+        title: 'Successful upload',
+        steps: [
+          {
+            id: 's1',
+            type: 'interaction',
+            from: 'api',
+            to: 'worker',
+            text: 'Process upload',
+          },
+          { id: 'gap', type: 'note', componentId: 'worker', text: '[MISSING]' },
+        ],
+      },
+    ],
+  },
+  missingStep: { scenarioId: 'upload', stepId: 'gap' },
+};
+
 describe('ExerciseSchema', () => {
   it('parses an exercise', () => {
     expect(ExerciseSchema.parse(exercise)).toEqual(exercise);
   });
 
-  it.each(['trace', 'complete', 'repair'])('accepts the %s mode', (mode) => {
+  it.each(['trace', 'repair'])('accepts the %s mode', (mode) => {
     expect(ExerciseSchema.safeParse({ ...exercise, mode }).success).toBe(true);
+  });
+
+  it('accepts the complete mode with its missing step', () => {
+    expect(ExerciseSchema.parse(completeExercise)).toEqual(completeExercise);
   });
 
   it.each(['observe', 'decompose', 'design', 'ambiguous-design'])(
@@ -141,6 +171,42 @@ describe('trace explicitness objective', () => {
         ],
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('complete exercise missing step', () => {
+  const issuesOf = (candidate: unknown) =>
+    ExerciseSchema.safeParse(candidate).error?.issues;
+
+  it('is required in a complete exercise', () => {
+    expect(issuesOf({ ...completeExercise, missingStep: undefined })).toEqual([
+      expect.objectContaining({
+        path: ['missingStep'],
+        message: 'A complete exercise needs a missing step',
+      }),
+    ]);
+  });
+
+  it.each(['trace', 'repair'])('is rejected in a %s exercise', (mode) => {
+    expect(issuesOf({ ...completeExercise, mode })).toEqual([
+      expect.objectContaining({
+        path: ['missingStep'],
+        message: 'Only complete exercises have a missing step',
+      }),
+    ]);
+  });
+
+  it.each([
+    ['an unknown scenario', { scenarioId: 'other', stepId: 'gap' }],
+    ['an unknown step', { scenarioId: 'upload', stepId: 'other' }],
+    ['an interaction', { scenarioId: 'upload', stepId: 's1' }],
+  ])('must not point to %s', (_, missingStep) => {
+    expect(issuesOf({ ...completeExercise, missingStep })).toEqual([
+      expect.objectContaining({
+        path: ['missingStep'],
+        message: 'The missing step must be a note in the starting design',
+      }),
+    ]);
   });
 });
 
