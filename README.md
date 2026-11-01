@@ -1,109 +1,98 @@
-# New Nx Repository
+# Flowment
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Flowment is a tool for learning system design by modelling how a system behaves. You describe a design as components and sequence scenarios (who sends what to whom, step by step), and Flowment derives the architecture from those interactions instead of asking you to draw a separate box diagram. An AI coach asks questions about the design, gives progressive hints, and reviews the result without scoring it.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Features
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/docs/technologies/typescript/introduction?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- **Projects**: create, rename and list projects. Every design edit is saved right away.
+- **Components**: add, edit, reorder and delete components (name, kind, responsibility). Deleting a component that scenarios still use shows the affected steps first.
+- **Scenarios and sequence diagrams**: add, duplicate and delete scenarios; add interactions and notes, then edit, move, duplicate or delete steps. Diagrams are rendered with a custom CSS-grid renderer.
+- **Derived architecture**: a read-only graph and list of which components talk to which, combined from all scenarios.
+- **AI coach**: asks one question at a time about the design, with up to three hints per question and, after the third hint, one possible answer. The coach never changes the design.
+- **Exercises**: start a practice project from a built-in catalog in one of three training modes: Trace, Complete or Repair. The coach works towards the exercise's learning objectives. Trace and Complete exercises also get fixed questions about blank interactions and the missing-step marker.
+- **Review**: submit any project for written feedback (strongest reasoning, most important missed issue, an alternative, the next skill to practise). Each design version is reviewed once and every review is kept.
 
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/get-started). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
+## Repository layout
 
-## Generate a library
+This is an Nx workspace using pnpm.
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
-```
+| Path | Project | What it is |
+| --- | --- | --- |
+| `apps/web` | `@flowment/web` | React 19 + Vite single-page app (Tailwind CSS, TanStack Query, react-hook-form, react-router) |
+| `apps/api` | `@flowment/api` | NestJS API with Postgres (Drizzle ORM), Redis (rate limiting) and the OpenAI Responses API for the coach |
+| `packages/domain` | `@flowment/domain` | The shared domain model: zod 4 schemas and pure functions for editing designs, deriving the architecture, coaching state and exercises. Used by both apps. |
+| `packages/shared` | `@flowment/shared` | Placeholder library, not used by the apps yet |
 
-## Run tasks
+The API's structure and import rules are described in [apps/api/docs/architecture.md](apps/api/docs/architecture.md).
 
-To build the library use:
+## Getting started
 
-```sh
-npx nx run pkg1:build
-```
+### Prerequisites
 
-To run any task with Nx use:
+- Node.js and pnpm
+- Docker, for Postgres and Redis
 
-```sh
-npx nx run <project-name>:<target>
-```
-
-These targets are either [inferred automatically](https://nx.dev/docs/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/docs/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/docs/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+### Setup
 
 ```sh
-npx nx sync
+pnpm install
+docker compose up -d
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+`docker compose` starts Postgres 17 on port `5434` (database `flowment`, user and password `postgres`) and Redis 7 on port `6379`.
+
+Copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env`, and adjust the values. The API validates its environment on startup and exits with a list of the invalid variables. It needs:
+
+| Variables | Purpose |
+| --- | --- |
+| `NODE_ENV`, `PORT`, `LOG_LEVEL`, `SHUTDOWN_TIMEOUT_MS`, `API_DOCS_ENABLED` | Process settings. Swagger UI is served at `/docs` unless `API_DOCS_ENABLED` is `false` (it defaults to off in production). |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL` | Postgres connection |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB` | Redis connection |
+| `CORS_ORIGINS`, `TRUST_PROXY`, `THROTTLE_TTL_MS`, `THROTTLE_LIMIT` | CORS (comma-separated; empty disables it), proxy trust and rate limiting |
+| `AI_PROVIDER` | `openai` (also needs `OPENAI_API_KEY` and `OPENAI_MODEL`) or `mock`, which makes every AI call fail |
+
+The web dev server proxies `/api` and `/health` to `API_URL` (default `http://localhost:3000`), so the API needs no CORS setup in development.
+
+Apply the database migrations:
 
 ```sh
-npx nx sync:check
+pnpm --filter @flowment/api db:migrate
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
-
-## Nx Cloud
-
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/docs/features/ci-features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/docs/features/ci-features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/docs/features/ci-features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/docs/features/ci-features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
+### Run
 
 ```sh
-npx nx g ci-workflow
+npx nx serve @flowment/api
+npx nx serve @flowment/web
 ```
 
-[Learn more about Nx on CI](https://nx.dev/docs/features/ci-features?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+The web app runs at http://localhost:4201.
 
-## Install Nx Console
+## Development
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+### Checks
 
-[Install Nx Console &raquo;](https://nx.dev/docs/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```sh
+npx nx run-many -t test,typecheck,lint
+```
 
-## 🔗 Learn More
+The API tests need Postgres running. They use a separate `flowment_test` database, created and migrated automatically on the first run, take the other `DB_*` settings from `apps/api/.env`, and replace the AI provider with a scripted one. The web app has no tests; logic that needs tests lives in `@flowment/domain`.
 
-- [Nx Documentation](https://nx.dev/docs)
-- [Crafting Your Workspace Tutorial](https://nx.dev/docs/getting-started/tutorials/crafting-your-workspace)
-- [Module Boundaries](https://nx.dev/docs/features/enforce-module-boundaries)
-- [Releasing Packages](https://nx.dev/docs/features/manage-releases)
-- [Nx Plugins](https://nx.dev/docs/concepts/nx-plugins)
-- [Nx Cloud](https://nx.dev/nx-cloud)
+### Database changes
 
-## 💬 Community
+Table schemas live in `apps/api/src/infrastructure/database/schema/`. After changing them:
 
-Join the Nx community:
+```sh
+pnpm --filter @flowment/api db:generate
+pnpm --filter @flowment/api db:migrate
+```
 
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+Review the generated SQL in `apps/api/src/infrastructure/database/migrations/` before migrating.
+
+### API client
+
+The web app calls the API through a client generated from the API's OpenAPI document (`apps/web/openapi.json` and `apps/web/src/api/`). After changing API routes or DTOs, regenerate both:
+
+```sh
+pnpm codegen
+```
